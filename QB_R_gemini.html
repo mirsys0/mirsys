@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Restaurants de Québec</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* 기본 리셋 및 프로페셔널 폰트 설정 */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            overflow: hidden; /* 모바일에서 바운스 스크롤 방지 */
+        }
+
+        /* 전체 화면 지도 */
+        #map { 
+            position: absolute;
+            top: 0; bottom: 0; left: 0; right: 0;
+            width: 100vw; 
+            height: 100dvh; 
+            z-index: 1;
+        }
+
+        /* 상단 플로팅 탭 (지역 필터) */
+        #top-nav {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 4px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .nav-btn {
+            background: transparent;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-btn.active {
+            background: #2b2d42;
+            color: white;
+            box-shadow: 0 2px 8px rgba(43,45,66,0.3);
+        }
+
+        /* 모바일 바텀 시트 (목록 뷰) */
+        #bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100vw;
+            height: 45dvh; /* 화면의 45% 차지 */
+            background: white;
+            border-radius: 24px 24px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        /* 바텀 시트 숨김 상태 (마커 클릭 시 맵을 넓게 보기 위해) */
+        #bottom-sheet.minimized {
+            transform: translateY(calc(100% - 60px));
+        }
+
+        /* 바텀 시트 핸들 (드래그 시각적 요소) */
+        .drag-handle {
+            width: 100%;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .drag-bar {
+            width: 40px;
+            height: 5px;
+            background: #dee2e6;
+            border-radius: 10px;
+        }
+
+        .sheet-header {
+            padding: 0 20px 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #2b2d42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 리스트 스크롤 영역 */
+        #place-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0 15px 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 리스트 아이템 스타일 */
+        .place-card {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #ffffff;
+            border: 1px solid #f1f3f5;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .place-card:active { background: #f8f9fa; }
+        .place-emoji {
+            font-size: 28px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .place-info { flex-grow: 1; }
+        .place-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #2b2d42;
+            margin-bottom: 4px;
+        }
+        .place-desc {
+            font-size: 12px;
+            color: #6c757d;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* 지도 마커 스타일 (프로페셔널) */
+        .custom-marker {
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            border: 2px solid white;
+            transition: transform 0.2s;
+        }
+        .custom-marker:active { transform: scale(0.9); }
+        .marker-upper { border: 2px solid #ef233c; } /* 윗동네 포인트 컬러 */
+        .marker-lower { border: 2px solid #3a86ff; } /* 아랫동네 포인트 컬러 */
+
+        /* 팝업 스타일 재정의 */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            padding: 4px;
+        }
+        .leaflet-popup-content { margin: 12px; }
+        .popup-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2b2d42;
+            margin: 0 0 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .popup-desc {
+            font-size: 13px;
+            color: #495057;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .popup-addr {
+            font-size: 11px;
+            color: #adb5bd;
+            font-style: normal;
+            border-top: 1px solid #f1f3f5;
+            padding-top: 8px;
+        }
+        .leaflet-container a.leaflet-popup-close-button {
+            color: #adb5bd;
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div id="top-nav">
+        <button id="btn-upper" class="nav-btn active" onclick="filterPlaces('upper')">Haute-Ville</button>
+        <button id="btn-lower" class="nav-btn" onclick="filterPlaces('lower')">Basse-Ville</button>
+    </div>
+
+    <div id="bottom-sheet">
+        <div class="drag-handle" onclick="toggleSheet()">
+            <div class="drag-bar"></div>
+        </div>
+        <div class="sheet-header">
+            <span id="sheet-title">Haute-Ville (15)</span>
+        </div>
+        <div id="place-list">
+            </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. 식당 데이터 (이름을 프랑스어 원어로 변경)
+        const foodPlaces = [
+            // Haute-Ville (어퍼 타운)
+            { id: 1, name: "Le Beffroi Steak House", emoji: "🥩", lat: 46.8124, lng: -71.2144, type: "upper", desc: "단풍나무 숯으로 구운 최고의 안심 스테이크를 맛볼 수 있어요!", address: "775 Av. Honoré-Mercier" },
+            { id: 2, name: "Cochons Dingues (St-Jean)", emoji: "🐷", lat: 46.8129, lng: -71.2120, type: "upper", desc: "유튜버들도 칭찬한 고기(폭립) 맛집이에요.", address: "1014 Rue Saint-Jean" },
+            { id: 3, name: "Au Petit Coin Breton", emoji: "🥗", lat: 46.8132, lng: -71.2114, type: "upper", desc: "할아버지의 할아버지 때부터 내려온 맛있는 그라탕과 크레페 집!", address: "1029 Rue Saint-Jean" },
+            { id: 4, name: "Pub Saint-Alexandre", emoji: "🎵", lat: 46.8137, lng: -71.2100, type: "upper", desc: "어른들을 위한 맥주와 신나는 라이브 재즈 음악이 있는 곳.", address: "1087 Rue Saint-Jean" },
+            { id: 5, name: "Paillard", emoji: "🥐", lat: 46.8140, lng: -71.2093, type: "upper", desc: "바삭바삭 크로아상과 달콤한 마카롱을 파는 빵집!", address: "1097 Rue Saint-Jean" },
+            { id: 6, name: "Chez Boulay", emoji: "🐟", lat: 46.8141, lng: -71.2090, type: "upper", desc: "아주 유명한 요리사님이 해주는 신기한 민물고기 요리.", address: "1110 Rue Saint-Jean" },
+            { id: 7, name: "McDonald's", emoji: "🍟", lat: 46.8145, lng: -71.2080, type: "upper", desc: "다 귀찮고 익숙한 맛이 당길 때! 우리가 아는 그 햄버거집.", address: "1151 Rue Saint-Jean" },
+            { id: 8, name: "Le Casse-Crêpe Breton", emoji: "🥞", lat: 46.8142, lng: -71.2085, type: "upper", desc: "요리하는 모습을 직접 구경하며 바삭한 크레페를 먹어요!", address: "1136 Rue Saint-Jean" },
+            { id: 9, name: "Portofino", emoji: "🍕", lat: 46.8148, lng: -71.2062, type: "upper", desc: "뜨거운 화덕에서 구운 피자와 직접 손으로 만든 파스타.", address: "54 Rue Couillard" },
+            { id: 10, name: "Restaurant 1640", emoji: "🐌", lat: 46.8127, lng: -71.2060, type: "upper", desc: "어린이 메뉴도 있고, 프랑스식 달팽이 요리도 파는 오래된 식당.", address: "16 Rue Sainte-Anne" },
+            { id: 11, name: "Le Chic Shack", emoji: "🍔", lat: 46.8125, lng: -71.2058, type: "upper", desc: "항상 줄을 서서 먹는 엄청 맛있는 수제 햄버거와 감자튀김!", address: "15 Rue du Fort" },
+            { id: 12, name: "Aux Anciens Canadiens", emoji: "🍲", lat: 46.8122, lng: -71.2070, type: "upper", desc: "퀘벡에서 가장 오래된 신기한 집에서 먹는 전통 요리.", address: "34 Rue Saint-Louis" },
+            { id: 13, name: "Restaurant Parmesan", emoji: "🍝", lat: 46.8120, lng: -71.2075, type: "upper", desc: "신나는 아코디언 연주를 들으며 먹는 맛있는 해산물 파스타.", address: "38 Rue Saint-Louis" },
+            { id: 14, name: "La Bûche", emoji: "🏕️", lat: 46.8118, lng: -71.2080, type: "upper", desc: "숲속 사냥꾼의 집처럼 생겼어요! 퀘벡 전통 백반.", address: "49 Rue Saint-Louis" },
+            { id: 15, name: "Marché Richelieu", emoji: "🛒", lat: 46.8115, lng: -71.2150, type: "upper", desc: "제일 큰 마트! 배고플 때 컵라면과 퀘벡 과자를 살 수 있어요.", address: "850 Rue Saint-Jean" },
+            
+            // Basse-Ville (로워 타운)
+            { id: 16, name: "Le Lapin Sauté", emoji: "🐰", lat: 46.8121, lng: -71.2025, type: "lower", desc: "귀여운 토끼 간판! 별미인 토끼 고기와 오리 고기가 있어요.", address: "52 Rue du Petit Champlain" },
+            { id: 17, name: "Cochons Dingues (Champlain)", emoji: "🍖", lat: 46.8118, lng: -71.2023, type: "lower", desc: "벽돌로 예쁘게 꾸며진 곳에서 단풍나무로 구운 고기를 먹어요!", address: "46 Bd Champlain" },
+            { id: 18, name: "Queues de Castor", emoji: "🦫", lat: 46.8124, lng: -71.2028, type: "lower", desc: "비버 꼬리를 닮은 빵 위에 맛있는 걸 듬뿍 올려 먹는 최고의 간식.", address: "28 Boulevard Champlain" },
+            { id: 19, name: "Q-de-Sac Resto-Pub", emoji: "🧀", lat: 46.8125, lng: -71.2020, type: "lower", desc: "화덕피자랑 맛있는 감자튀김 요리(푸틴)를 파는 곳.", address: "10 Rue du Cul-de-Sac" },
+            { id: 20, name: "Archibald Microbrasserie", emoji: "🍻", lat: 46.8120, lng: -71.2015, type: "lower", desc: "어른들을 위한 상 받은 맛있는 맥주와 피자를 파는 곳.", address: "40 Rue du Marché-Champlain" },
+            { id: 21, name: "La Maison Smith", emoji: "☕", lat: 46.8130, lng: -71.2025, type: "lower", desc: "광장 앞에 있는 제일 유명한 카페! 쫄깃한 크로아상도 팔아요.", address: "23 Rue Notre-Dame" }
+        ];
+
+        // 2. 맵 초기화 (모바일 환경에 맞춰 줌 컨트롤 비활성화/위치 조정)
+        const map = L.map('map', { zoomControl: false }).setView([46.8130, -71.2080], 15);
+        L.control.zoom({ position: 'bottomright' }).addTo(map); // 줌 컨트롤을 우측 하단으로 이동
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
+
+        const markers = {};
+        let currentType = 'upper'; // 기본 탭 설정
+        const listContainer = document.getElementById('place-list');
+        const sheetTitle = document.getElementById('sheet-title');
+        const bottomSheet = document.getElementById('bottom-sheet');
+
+        // 3. 마커 렌더링 함수
+        function renderMap() {
+            foodPlaces.forEach(place => {
+                const markerClass = place.type === 'upper' ? 'marker-upper' : 'marker-lower';
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div class="custom-marker ${markerClass}" style="width:40px; height:40px;">${place.emoji}</div>`,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
+                    popupAnchor: [0, -20]
+                });
+
+                const marker = L.marker([place.lat, place.lng], { icon: customIcon });
+                marker.bindPopup(`
+                    <h3 class="popup-title"><span>${place.emoji}</span> ${place.name}</h3>
+                    <div class="popup-desc">${place.desc}</div>
+                    <div class="popup-addr">📍 ${place.address}</div>
+                `);
+                
+                // 마커 클릭 시 팝업 열리고 바텀 시트 축소
+                marker.on('click', () => {
+                    map.setView([place.lat - 0.0005, place.lng], 17, { animate: true, duration: 0.5 });
+                    minimizeSheet();
+                });
+
+                markers[place.id] = marker;
+            });
+        }
+
+        // 4. 목록 필터링 및 렌더링 함수
+        function filterPlaces(type) {
+            currentType = type;
+            
+            // UI 탭 업데이트
+            document.getElementById('btn-upper').classList.toggle('active', type === 'upper');
+            document.getElementById('btn-lower').classList.toggle('active', type === 'lower');
+
+            // 마커 표시/숨김 및 맵 이동 처리
+            const bounds = L.latLngBounds();
+            foodPlaces.forEach(place => {
+                if (place.type === type) {
+                    markers[place.id].addTo(map);
+                    bounds.extend([place.lat, place.lng]);
+                } else {
+                    map.removeLayer(markers[place.id]);
+                }
+            });
+
+            // 선택된 지역에 맞게 맵 포커싱 (바텀 시트 공간 고려하여 패딩 적용)
+            if(Object.keys(bounds).length > 0) {
+                map.fitBounds(bounds, { paddingBottomRight: [0, window.innerHeight * 0.45], maxZoom: 16 });
+            }
+
+            // 리스트 업데이트
+            listContainer.innerHTML = '';
+            const filtered = foodPlaces.filter(p => p.type === type);
+            
+            // 타이틀 업데이트
+            const titleName = type === 'upper' ? 'Haute-Ville' : 'Basse-Ville';
+            sheetTitle.innerText = `${titleName} (${filtered.length})`;
+
+            filtered.forEach(place => {
+                const card = document.createElement('div');
+                card.className = 'place-card';
+                card.innerHTML = `
+                    <div class="place-emoji">${place.emoji}</div>
+                    <div class="place-info">
+                        <div class="place-name">${place.name}</div>
+                        <div class="place-desc">${place.desc}</div>
+                    </div>
+                `;
+                
+                // 리스트 아이템 클릭 시
+                card.onclick = () => {
+                    map.setView([place.lat - 0.0005, place.lng], 18, { animate: true, duration: 0.5 });
+                    markers[place.id].openPopup();
+                    minimizeSheet(); // 맵을 잘 보이게 하기 위해 바텀 시트 내림
+                };
+                
+                listContainer.appendChild(card);
+            });
+            
+            // 탭 이동 시 바텀 시트 무조건 열기
+            bottomSheet.classList.remove('minimized');
+        }
+
+        // 5. 바텀 시트 토글 로직
+        function toggleSheet() {
+            bottomSheet.classList.toggle('minimized');
+        }
+        function minimizeSheet() {
+            bottomSheet.classList.add('minimized');
+        }
+
+        // 맵 터치(클릭) 시 바텀 시트 내리기 (지도 보기에 집중)
+        map.on('click', () => {
+            minimizeSheet();
+        });
+
+        // 앱 초기화 실행
+        renderMap();
+        filterPlaces('upper'); // 시작 시 Haute-Ville 포커싱
+    </script>
+</body>
+</html>
