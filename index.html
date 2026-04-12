@@ -1,109 +1,285 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>나의 첫 GitHub Pages 사이트</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
-        
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .container {
-            background: white;
-            max-width: 800px;
-            width: 90%;
-            margin: 40px auto;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-        
-        header {
-            background: #2c3e50;
-            color: white;
-            padding: 40px 20px;
-            text-align: center;
-        }
-        
-        h1 {
-            margin: 0;
-            font-size: 2.8rem;
-        }
-        
-        .subtitle {
-            font-size: 1.3rem;
-            opacity: 0.9;
-            margin-top: 10px;
-        }
-        
-        main {
-            padding: 50px 40px;
-            text-align: center;
-        }
-        
-        p {
-            font-size: 1.2rem;
-            line-height: 1.7;
-            color: #555;
-        }
-        
-        .btn {
-            display: inline-block;
-            margin-top: 30px;
-            padding: 14px 32px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 700;
-            transition: all 0.3s;
-        }
-        
-        .btn:hover {
-            background: #5a6fd8;
-            transform: translateY(-3px);
-        }
-        
-        footer {
-            padding: 20px;
-            text-align: center;
-            background: #f8f9fa;
-            color: #777;
-            font-size: 0.95rem;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>파란여행 | 뉴욕+워싱턴 3박4일 실제 동선지도</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#0a1628;--navy-mid:#132040;--gold:#c8a84b;--cream:#f5f0e8;--dep:#6bc5f8;--d1:#f4a261;--d2:#2a9d8f;--d3:#e76f51;--d4:#9b72cf;--white:#fff;--muted:#8a9bb8;--meal:#f4c430;--hotel:#89cff0;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--cream);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);border-bottom:1px solid rgba(200,168,75,.3);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:1000;}
+  .hl{display:flex;align-items:center;gap:14px;}
+  .logo-badge{background:var(--gold);color:var(--navy);font-family:'Noto Serif KR',serif;font-weight:700;font-size:13px;padding:5px 12px;border-radius:4px;}
+  .htitle{font-family:'Noto Serif KR',serif;font-size:19px;font-weight:700;color:#fff;}
+  .hsub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .hpills{display:flex;gap:10px;flex-wrap:wrap;}
+  .pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--cream);}
+  .wrap{display:flex;flex:1;overflow:hidden;}
+  .sb{width:315px;background:var(--navy-mid);overflow-y:auto;flex-shrink:0;border-right:1px solid rgba(200,168,75,.15);}
+  .sb::-webkit-scrollbar{width:3px;}.sb::-webkit-scrollbar-thumb{background:rgba(200,168,75,.3);border-radius:2px;}
+  .sec{padding:15px 18px 10px;border-bottom:1px solid rgba(200,168,75,.12);}
+  .slbl{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .slbl::after{content:'';flex:1;height:1px;background:rgba(200,168,75,.2);}
+  .drow{display:flex;align-items:flex-start;gap:10px;padding:7px 10px;cursor:pointer;border-radius:6px;transition:background .2s;}
+  .drow:hover{background:rgba(255,255,255,.04);}
+  .dtm{font-size:11px;font-weight:700;color:var(--dep);min-width:46px;padding-top:1px;}
+  .dinf strong{font-size:12px;font-weight:600;color:#fff;display:block;}
+  .dinf span{font-size:10px;color:var(--muted);line-height:1.5;}
+  .day-card{border-bottom:1px solid rgba(255,255,255,.05);}
+  .dhdr{display:flex;align-items:center;gap:11px;padding:13px 18px 10px;cursor:pointer;transition:background .2s;}
+  .dhdr:hover{background:rgba(255,255,255,.03);}
+  .dbadge{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;font-family:'Noto Serif KR',serif;}
+  .d1b{background:rgba(244,162,97,.15);color:var(--d1);border:2px solid var(--d1);}
+  .d2b{background:rgba(42,157,143,.15);color:var(--d2);border:2px solid var(--d2);}
+  .d3b{background:rgba(231,111,81,.15);color:var(--d3);border:2px solid var(--d3);}
+  .d4b{background:rgba(155,114,207,.15);color:var(--d4);border:2px solid var(--d4);}
+  .dinf2 h3{font-size:12px;font-weight:700;color:#fff;}
+  .dinf2 p{font-size:10px;color:var(--muted);margin-top:1px;}
+  .spots{padding:0 18px 12px 62px;}
+  .spot{display:flex;align-items:flex-start;gap:7px;padding:4px 6px;cursor:pointer;border-radius:4px;transition:all .15s;}
+  .spot:hover{background:rgba(255,255,255,.04);transform:translateX(3px);}
+  .sdot{width:5px;height:5px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+  .spot p{font-size:11px;color:var(--cream);line-height:1.5;}
+  .spot p .addr{font-size:9px;color:rgba(138,155,184,.7);display:block;font-style:italic;margin-top:1px;}
+  .opt{display:inline-block;font-size:8px;background:rgba(200,168,75,.2);color:var(--gold);border:1px solid rgba(200,168,75,.4);border-radius:3px;padding:1px 4px;margin-left:3px;vertical-align:middle;}
+  .irow{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px;padding-top:5px;border-top:1px solid rgba(255,255,255,.05);}
+  .chip{font-size:9px;padding:2px 8px;border-radius:10px;}
+  .chip.m{background:rgba(244,196,48,.12);color:var(--meal);border:1px solid rgba(244,196,48,.2);}
+  .chip.h{background:rgba(137,207,240,.12);color:var(--hotel);border:1px solid rgba(137,207,240,.2);}
+  #map{flex:1;background:#e0e8f0;}
+  .lbox{background:rgba(255,255,255,.97);border:2px solid rgba(200,168,75,.6);border-radius:8px;padding:11px 14px;box-shadow:0 2px 12px rgba(0,0,0,.15);}
+  .ltitle{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8a6000;margin-bottom:9px;font-family:'Noto Sans KR',sans-serif;}
+  .li{display:flex;align-items:center;gap:7px;padding:2px 0;font-family:'Noto Sans KR',sans-serif;font-size:10px;color:#333;}
+  .ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .lline{width:16px;height:3px;border-radius:2px;flex-shrink:0;}
+  .leaflet-popup-content-wrapper{background:#fff!important;border:2px solid rgba(200,168,75,.7)!important;border-radius:10px!important;box-shadow:0 6px 24px rgba(0,0,0,.22)!important;overflow:hidden!important;padding:0!important;}
+  .leaflet-popup-tip{background:#fff!important;}
+  .leaflet-popup-content{margin:0!important;font-family:'Noto Sans KR',sans-serif!important;}
+  .pu-img{width:100%;display:block;border-radius:8px 8px 0 0;}
+  .pu-body{padding:10px 13px 12px;}
+  .pd{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
+  .pn{font-weight:700;font-size:13px;color:#0a1628;margin-bottom:4px;}
+  .pa{font-size:10px;color:#666;font-style:italic;margin-bottom:4px;}
+  .pdesc{font-size:11px;color:#444;line-height:1.55;}
+  @media(max-width:768px){.sb{width:260px;}.hpills{display:none;}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>환영합니다! 🎉</h1>
-            <p class="subtitle">GitHub Pages 호스팅 테스트 사이트</p>
-        </header>
-        
-        <main>
-            <p>
-                이 페이지가 정상적으로 보인다면 GitHub Pages가 제대로 작동하는 거예요!<br>
-                이제 마음껏 HTML, CSS, JavaScript를 추가해서 테스트해보세요.
-            </p>
-            
-            <a href="https://github.com" target="_blank" class="btn">GitHub 바로가기</a>
-        </main>
-        
-        <footer>
-            &copy; 2026 Lewis의 GitHub Pages 테스트 사이트<br>
-            이 파일은 Grok이 만들어드렸습니다 😊
-        </footer>
+<header>
+  <div class="hl">
+    <div class="logo-badge">파란여행</div>
+    <div>
+      <div class="htitle">🗺️ 뉴욕 + 워싱턴 D.C 3박4일 실제동선</div>
+      <div class="hsub">Toronto 출발 · 실제 경유지 주소 기반 지도</div>
     </div>
+  </div>
+  <div class="hpills">
+    <div class="pill">📅 3박 4일</div>
+    <div class="pill">🏨 Hampton → Courtyard → Sheraton</div>
+    <div class="pill">🍽️ 실제 식당 주소 포함</div>
+    <div class="pill">🛍️ Woodbury Outlets</div>
+  </div>
+</header>
+<div class="wrap">
+<div class="sb">
+  <div class="sec">
+    <div class="slbl">출발지 (탑승장소)</div>
+    <div class="drow" onclick="fly(43.6865,-79.5915)"><div class="dtm">첫 출발</div><div class="dinf"><strong>🚌 Crowne Plaza (토론토)</strong><span>33 Carlson Ct, Toronto, ON M9W 6H5</span></div></div>
+    <div class="drow" onclick="fly(43.5930,-79.6457)"><div class="dtm">6:40 AM</div><div class="dinf"><strong>🚌 미시사가 출발</strong><span>189 Rathburn Rd W, Mississauga, ON</span></div></div>
+    <div class="drow" onclick="fly(43.4005,-79.7318)"><div class="dtm">7:10 AM</div><div class="dinf"><strong>🚌 옥빌 출발 (SilverCity)</strong><span>3531 Wyecroft Rd, Oakville, ON</span></div></div>
+    <div class="drow" onclick="fly(43.0946,-79.0872)"><div class="dtm">8:00 AM</div><div class="dinf"><strong>🚌 나이아가라 (Hershey's)</strong><span>5701 Falls Ave, Niagara Falls, ON</span></div></div>
+  </div>
+  <div class="day-card">
+    <div class="dhdr" onclick="fly(39.6654,-77.7218)"><div class="dbadge d1b">1일</div><div class="dinf2"><h3>토론토 → 메릴랜드 Hagerstown</h3><p>국경 통과 · PA 경유 · 약 900km 이동</p></div></div>
+    <div class="spots">
+      <div class="spot" onclick="fly(43.0946,-79.0872)"><div class="sdot" style="background:var(--d1)"></div><p>🛂 캐나다-미국 국경 통과<span class="addr">Niagara Falls 국경 (Rainbow Bridge)</span></p></div>
+      <div class="spot" onclick="fly(41.7940,-77.0778)"><div class="sdot" style="background:var(--d1)"></div><p>🍜 점심: QQ Buffet<span class="addr">181 N Main St, Mansfield, PA 16933</span></p></div>
+      <div class="spot" onclick="fly(40.8014,-76.8615)"><div class="sdot" style="background:var(--d1)"></div><p>🛒 휴게소: Walmart<span class="addr">980 Susquehanna Trail, Selinsgrove, PA 17870</span></p></div>
+      <div class="spot" onclick="fly(39.6618,-77.7194)"><div class="sdot" style="background:var(--d1)"></div><p>🍽️ 저녁: Supreme Buffet<span class="addr">545 Dual Hwy, Hagerstown, MD 21740</span></p></div>
+      <div class="spot" onclick="fly(39.6654,-77.7218)"><div class="sdot" style="background:var(--d1)"></div><p>🏨 Hampton Inn Hagerstown<span class="addr">1716 Dual Hwy, Hagerstown, MD 21740</span></p></div>
+      <div class="irow"><span class="chip m">🍜 중식</span><span class="chip m">🍽️ 석식</span><span class="chip h">🏨 Hampton Inn</span></div>
+    </div>
+  </div>
+  <div class="day-card">
+    <div class="dhdr" onclick="fly(38.8893,-77.0502)"><div class="dbadge d2b">2일</div><div class="dinf2"><h3>워싱턴 D.C 관광 → 뉴저지</h3><p>루레이동굴(선택) · 링컨 · 백악관 · 스미스소니언</p></div></div>
+    <div class="spots">
+      <div class="spot" onclick="fly(38.6636,-78.4627)"><div class="sdot" style="background:var(--d2)"></div><p>🦇 루레이 동굴 <span class="opt">선택 U$38</span><span class="addr">101 Cave Hill Rd, Luray, VA 22835</span></p></div>
+      <div class="spot" onclick="fly(38.8893,-77.0502)"><div class="sdot" style="background:var(--d2)"></div><p>🏛️ 링컨 기념관 · 한국전참전용사 기념비<span class="addr">297 Henry Bacon Dr NW, Washington, DC 20245</span></p></div>
+      <div class="spot" onclick="fly(38.8988,-77.0401)"><div class="sdot" style="background:var(--d2)"></div><p>🏛️ 백악관 하차 Drop-off<span class="addr">444 17th St NW, Washington, DC 20006</span></p></div>
+      <div class="spot" onclick="fly(38.8984,-77.0418)"><div class="sdot" style="background:var(--d2)"></div><p>🏛️ 백악관 탑승 Pick-up<span class="addr">1580 H St NW, Washington, DC 20006</span></p></div>
+      <div class="spot" onclick="fly(38.8881,-77.0262)"><div class="sdot" style="background:var(--d2)"></div><p>🏛️ 스미스소니언 박물관<span class="addr">900 Jefferson Dr SW, Washington, DC 20560</span></p></div>
+      <div class="spot" onclick="fly(39.1661,-76.6244)"><div class="sdot" style="background:var(--d2)"></div><p>🍽️ 저녁: Hibachi Buffet<span class="addr">6619 Governor Ritchie Hwy, Glen Burnie, MD 21061</span></p></div>
+      <div class="spot" onclick="fly(40.0027,-74.8118)"><div class="sdot" style="background:var(--d2)"></div><p>🏨 Courtyard by Marriott<span class="addr">30 Western Dr, Mt Holly, NJ 08060</span></p></div>
+      <div class="irow"><span class="chip m">🍳 조식</span><span class="chip m">🍽️ 석식</span><span class="chip h">🏨 Courtyard Marriott</span></div>
+    </div>
+  </div>
+  <div class="day-card">
+    <div class="dhdr" onclick="fly(40.7566,-73.9903)"><div class="dbadge d3b">3일</div><div class="dinf2"><h3>뉴욕 맨하탄 관광 → 파시파니</h3><p>월스트릿 → 첼시 → 5번가 → 타임스퀘어</p></div></div>
+    <div class="spots">
+      <div class="spot" onclick="fly(40.7083,-74.0148)"><div class="sdot" style="background:var(--d3)"></div><p>🐂 월스트릿 · 황소상<span class="addr">11 Trinity Pl, New York, NY 10006</span></p></div>
+      <div class="spot" onclick="fly(40.7059,-74.0042)"><div class="sdot" style="background:var(--d3)"></div><p>🛳️ 자유의 여신상 페리 <span class="opt">선택 U$37</span><span class="addr">87 South St, New York, NY 10038</span></p></div>
+      <div class="spot" onclick="fly(40.7115,-74.0148)"><div class="sdot" style="background:var(--d3)"></div><p>🕊️ 그라운드 제로 (9.11 메모리얼)<span class="addr">110 West St, New York, NY 10006</span></p></div>
+      <div class="spot" onclick="fly(40.7424,-74.0076)"><div class="sdot" style="background:var(--d3)"></div><p>🛒 첼시마켓 · 하이라인 · 리틀 아일랜드<span class="addr">60 10th Ave, New York, NY 10014</span></p></div>
+      <div class="spot" onclick="fly(40.7306,-73.9983)"><div class="sdot" style="background:var(--d3)"></div><p>🎓 워싱턴 광장 · NYU<span class="addr">4 E 8th St, New York, NY 10003</span></p></div>
+      <div class="spot" onclick="fly(40.7587,-73.9787)"><div class="sdot" style="background:var(--d3)"></div><p>🏙️ 락펠러 센터 · 5번가 명품거리<span class="addr">54 W 50th St, New York, NY 10112</span></p></div>
+      <div class="spot" onclick="fly(40.7456,-73.9882)"><div class="sdot" style="background:var(--d3)"></div><p>🍽️ 저녁: 코리아타운<span class="addr">308 5th Ave, New York, NY 10001</span></p></div>
+      <div class="spot" onclick="fly(40.7566,-73.9903)"><div class="sdot" style="background:var(--d3)"></div><p>✨ 타임스퀘어 · 브로드웨이 <span class="opt">선택</span><span class="addr">229 W 42nd St, New York, NY 10036</span></p></div>
+      <div class="spot" onclick="fly(40.7536,-74.0040)"><div class="sdot" style="background:var(--d3)"></div><p>🐚 엣지 전망대 · 허드슨야드 <span class="opt">선택 U$48</span><span class="addr">535 W 33rd St, New York, NY 10001</span></p></div>
+      <div class="spot" onclick="fly(40.8673,-74.3895)"><div class="sdot" style="background:var(--d3)"></div><p>🏨 Sheraton Parsippany<span class="addr">199 Smith Rd, Parsippany, NJ 07054</span></p></div>
+      <div class="irow"><span class="chip m">🍳 조식</span><span class="chip m">🍽️ 석식</span><span class="chip h">🏨 Sheraton Parsippany</span></div>
+    </div>
+  </div>
+  <div class="day-card">
+    <div class="dhdr" onclick="fly(41.3192,-74.1022)"><div class="dbadge d4b">4일</div><div class="dinf2"><h3>우드버리 아웃렛 → 토론토 귀환</h3><p>I-81 경유 · 국경 면세점 · 종료</p></div></div>
+    <div class="spots">
+      <div class="spot" onclick="fly(41.3192,-74.1022)"><div class="sdot" style="background:var(--d4)"></div><p>🛍️ 우드버리 커먼 프리미엄 아웃렛<span class="addr">498 Red Apple Ct, Central Valley, NY 10917</span></p></div>
+      <div class="spot" onclick="fly(42.6120,-76.1430)"><div class="sdot" style="background:var(--d4)"></div><p>🛣️ I-81 Preble 휴게소<span class="addr">Hwy 81 Preble Rest Area, NY</span></p></div>
+      <div class="spot" onclick="fly(43.0946,-79.0872)"><div class="sdot" style="background:var(--d4)"></div><p>🛂 캐나다 국경 면세점 · 재입국<span class="addr">Niagara Falls 국경</span></p></div>
+      <div class="spot" onclick="fly(43.6865,-79.5915)"><div class="sdot" style="background:var(--d4)"></div><p>🏠 토론토 도착 (Crowne Plaza)<span class="addr">33 Carlson Ct, Toronto, ON M9W 6H5</span></p></div>
+      <div class="irow"><span class="chip m">🍳 조식</span><span class="chip m">🍽️ 중식(자유)</span></div>
+    </div>
+  </div>
+</div>
+<div id="map"></div>
+</div>
+
+<script>
+/* ── MAP ── */
+const map = L.map('map',{center:[40.5,-76.5],zoom:6,zoomControl:false,attributionControl:false});
+L.control.zoom({position:'bottomright'}).addTo(map);
+L.control.attribution({position:'bottomleft',prefix:'© OpenStreetMap contributors'}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>',
+  maxZoom: 19
+}).addTo(map);
+window.fly=(lat,lng)=>map.flyTo([lat,lng],14,{duration:1.1});
+const C={dep:'#6bc5f8',d1:'#f4a261',d2:'#2a9d8f',d3:'#e76f51',d4:'#9b72cf',meal:'#f4c430',hotel:'#89cff0'};
+
+/* ── SVG ILLUSTRATIONS ── */
+const IMGS = {
+
+luray:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="cg" cx="50%" cy="65%" r="60%"><stop offset="0%" stop-color="#1a6b8a"/><stop offset="100%" stop-color="#040810"/></radialGradient></defs><rect width="260" height="150" fill="url(#cg)"/><path d="M0,0 L260,0 L260,38 Q220,18 195,40 Q165,58 138,28 Q112,5 82,30 Q56,50 0,32Z" fill="#130f22"/><polygon points="32,32 44,32 38,85" fill="#4a3f68"/><polygon points="64,24 76,24 70,82" fill="#3d3555"/><polygon points="100,28 112,28 106,78" fill="#4a3f68"/><polygon points="133,20 146,20 139,80" fill="#3d3555"/><polygon points="168,26 179,26 173,74" fill="#4a3f68"/><polygon points="198,28 210,28 204,78" fill="#3d3555"/><polygon points="228,24 239,24 233,70" fill="#4a3f68"/><polygon points="14,150 27,150 20,102" fill="#5a4e7a"/><polygon points="52,150 65,150 58,106" fill="#4e4268"/><polygon points="88,150 100,150 94,108" fill="#5a4e7a"/><polygon points="152,150 165,150 158,102" fill="#4e4268"/><polygon points="200,150 213,150 206,104" fill="#5a4e7a"/><polygon points="240,150 252,150 246,105" fill="#4e4268"/><ellipse cx="130" cy="138" rx="92" ry="12" fill="#0d3d54"/><ellipse cx="130" cy="136" rx="72" ry="9" fill="#1a7a9a" opacity="0.65"/><ellipse cx="130" cy="134" rx="46" ry="5" fill="#4fb8d4" opacity="0.42"/><ellipse cx="130" cy="95" rx="62" ry="36" fill="#1a8aaa" opacity="0.1"/><line x1="38" y1="85" x2="38" y2="125" stroke="#4fb8d4" stroke-width="0.6" opacity="0.3"/><line x1="106" y1="78" x2="106" y2="120" stroke="#4fb8d4" stroke-width="0.6" opacity="0.3"/><line x1="173" y1="74" x2="173" y2="118" stroke="#4fb8d4" stroke-width="0.6" opacity="0.3"/><text x="130" y="118" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7de8ff" opacity="0.9" font-weight="bold">루레이 동굴 · Luray Caverns</text></svg>`,
+
+lincoln:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a82c8"/><stop offset="100%" stop-color="#b8d8f0"/></linearGradient></defs><rect width="260" height="150" fill="url(#lsk)"/><rect x="0" y="118" width="260" height="32" fill="#4a7a38"/><rect x="5" y="122" width="250" height="9" fill="#6ab8e0" rx="2" opacity="0.65"/><rect x="25" y="113" width="210" height="6" fill="#ddd8c8" rx="1"/><rect x="30" y="107" width="200" height="7" fill="#e0daca" rx="1"/><rect x="38" y="101" width="184" height="7" fill="#d8d2c0"/><rect x="38" y="74" width="184" height="28" fill="#f0ece0"/><rect x="50" y="47" width="11" height="55" fill="#f8f5ec" rx="1"/><rect x="70" y="47" width="11" height="55" fill="#f8f5ec" rx="1"/><rect x="90" y="47" width="11" height="55" fill="#f8f5ec" rx="1"/><rect x="110" y="47" width="11" height="55" fill="#f8f5ec" rx="1"/><rect x="130" y="47" width="11" height="55" fill="#f8f5ec" rx="1"/><rect x="150" y="47" width="11" height="55" fill="#f8f5ec" rx="1"/><rect x="170" y="47" width="11" height="55" fill="#f8f5ec" rx="1"/><rect x="190" y="47" width="11" height="55" fill="#f8f5ec" rx="1"/><rect x="50" y="48" width="152" height="54" fill="#0a0820" opacity="0.09"/><rect x="38" y="38" width="184" height="10" fill="#e5e0d0"/><polygon points="38,38 222,38 222,20 130,8 38,20" fill="#dcd6c4"/><rect x="119" y="55" width="22" height="36" fill="#c0b8a8" opacity="0.5" rx="2"/><circle cx="130" cy="52" r="6" fill="#c0b8a8" opacity="0.5"/><text x="130" y="145" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">링컨 기념관 · Lincoln Memorial</text></svg>`,
+
+whitehouse:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="wsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4a9ad4"/><stop offset="100%" stop-color="#c5e0f0"/></linearGradient></defs><rect width="260" height="150" fill="url(#wsk)"/><ellipse cx="65" cy="24" rx="30" ry="12" fill="white" opacity="0.7"/><ellipse cx="88" cy="21" rx="20" ry="9" fill="white" opacity="0.7"/><ellipse cx="190" cy="26" rx="28" ry="11" fill="white" opacity="0.7"/><ellipse cx="212" cy="23" rx="18" ry="8" fill="white" opacity="0.7"/><rect x="0" y="118" width="260" height="32" fill="#3d7a2a"/><line x1="130" y1="10" x2="130" y2="36" stroke="#bbb" stroke-width="1.5"/><polygon points="130,10 150,18 130,26" fill="#dc143c"/><rect x="12" y="72" width="58" height="52" fill="#f0ece0" rx="2"/><rect x="190" y="72" width="58" height="52" fill="#f0ece0" rx="2"/><rect x="70" y="57" width="120" height="67" fill="#f5f2e8"/><polygon points="70,57 190,57 190,43 130,32 70,43" fill="#e8e4d5"/><rect x="78" y="59" width="9" height="65" fill="#fff" opacity="0.9" rx="1"/><rect x="96" y="59" width="9" height="65" fill="#fff" opacity="0.9" rx="1"/><rect x="114" y="59" width="9" height="65" fill="#fff" opacity="0.9" rx="1"/><rect x="132" y="59" width="9" height="65" fill="#fff" opacity="0.9" rx="1"/><rect x="150" y="59" width="9" height="65" fill="#fff" opacity="0.9" rx="1"/><rect x="168" y="59" width="9" height="65" fill="#fff" opacity="0.9" rx="1"/><rect x="22" y="82" width="12" height="16" fill="#7ab8e0" rx="1" opacity="0.7"/><rect x="42" y="82" width="12" height="16" fill="#7ab8e0" rx="1" opacity="0.7"/><rect x="198" y="82" width="12" height="16" fill="#7ab8e0" rx="1" opacity="0.7"/><rect x="218" y="82" width="12" height="16" fill="#7ab8e0" rx="1" opacity="0.7"/><rect x="0" y="116" width="260" height="3" fill="#c0b89a"/><ellipse cx="130" cy="126" rx="18" ry="5" fill="#6ab8e0" opacity="0.55"/><line x1="130" y1="120" x2="130" y2="113" stroke="#6ab8e0" stroke-width="2" opacity="0.45"/><text x="130" y="147" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">백악관 · The White House</text></svg>`,
+
+smithsonian:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ssk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4a8fc8"/><stop offset="100%" stop-color="#aad0ec"/></linearGradient></defs><rect width="260" height="150" fill="url(#ssk)"/><rect x="0" y="120" width="260" height="30" fill="#3a6e28"/><ellipse cx="28" cy="110" rx="22" ry="20" fill="#2d6a1a"/><rect x="26" y="110" width="4" height="14" fill="#5a3a1a"/><ellipse cx="232" cy="110" rx="22" ry="20" fill="#2d6a1a"/><rect x="230" y="110" width="4" height="14" fill="#5a3a1a"/><rect x="55" y="62" width="150" height="60" fill="#8b3a2a"/><line x1="55" y1="72" x2="205" y2="72" stroke="#7a3020" stroke-width="1" opacity="0.5"/><line x1="55" y1="82" x2="205" y2="82" stroke="#7a3020" stroke-width="1" opacity="0.5"/><line x1="55" y1="92" x2="205" y2="92" stroke="#7a3020" stroke-width="1" opacity="0.5"/><line x1="55" y1="102" x2="205" y2="102" stroke="#7a3020" stroke-width="1" opacity="0.5"/><rect x="108" y="28" width="44" height="94" fill="#7a3220"/><rect x="104" y="22" width="12" height="10" fill="#7a3220" rx="1"/><rect x="120" y="18" width="20" height="14" fill="#7a3220" rx="1"/><rect x="144" y="22" width="12" height="10" fill="#7a3220" rx="1"/><path d="M119,40 L119,58 Q130,50 141,58 L141,40 Q130,33 119,40Z" fill="#5a9ac8" opacity="0.6"/><path d="M119,68 L119,86 Q130,80 141,86 L141,68 Q130,61 119,68Z" fill="#5a9ac8" opacity="0.6"/><path d="M68,76 L68,92 Q77,86 86,92 L86,76 Q77,70 68,76Z" fill="#5a9ac8" opacity="0.5"/><path d="M172,76 L172,92 Q181,86 190,92 L190,76 Q181,70 172,76Z" fill="#5a9ac8" opacity="0.5"/><rect x="55" y="46" width="22" height="76" fill="#8b3a2a"/><rect x="55" y="40" width="22" height="8" fill="#7a3220" rx="1"/><rect x="183" y="46" width="22" height="76" fill="#8b3a2a"/><rect x="183" y="40" width="22" height="8" fill="#7a3220" rx="1"/><line x1="130" y1="14" x2="130" y2="18" stroke="#888" stroke-width="1.5"/><polygon points="130,14 143,17 130,21" fill="#dc143c"/><text x="130" y="147" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">스미스소니언 · Smithsonian</text></svg>`,
+
+bull:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7a8fa8"/><stop offset="100%" stop-color="#c8d8e8"/></linearGradient></defs><rect width="260" height="150" fill="url(#bsk)"/><rect x="0" y="55" width="40" height="80" fill="#9aa8b8" opacity="0.6"/><rect x="5" y="42" width="26" height="93" fill="#8a9ab0" opacity="0.7"/><rect x="200" y="50" width="35" height="85" fill="#9aa8b8" opacity="0.6"/><rect x="218" y="38" width="26" height="97" fill="#8a9ab0" opacity="0.7"/><rect x="0" y="48" width="14" height="87" fill="#7a8a9a" opacity="0.5"/><rect x="240" y="45" width="20" height="90" fill="#7a8a9a" opacity="0.5"/><rect x="8" y="50" width="5" height="4" fill="#e8d880" opacity="0.6"/><rect x="17" y="50" width="5" height="4" fill="#e8d880" opacity="0.6"/><rect x="8" y="60" width="5" height="4" fill="#e8d880" opacity="0.6"/><rect x="222" y="48" width="5" height="4" fill="#e8d880" opacity="0.6"/><rect x="232" y="48" width="5" height="4" fill="#e8d880" opacity="0.6"/><rect x="0" y="120" width="260" height="30" fill="#888680"/><rect x="0" y="118" width="260" height="4" fill="#989890"/><ellipse cx="128" cy="122" rx="62" ry="8" fill="#5a5858" opacity="0.38"/><ellipse cx="128" cy="100" rx="56" ry="30" fill="#b8762a"/><ellipse cx="178" cy="88" rx="27" ry="21" fill="#c07830" transform="rotate(-14 178 88)"/><ellipse cx="198" cy="92" rx="11" ry="9" fill="#b07028" transform="rotate(-10 198 92)"/><circle cx="196" cy="94" r="2.5" fill="#8a5018"/><circle cx="203" cy="92" r="2.5" fill="#8a5018"/><circle cx="186" cy="82" r="4" fill="#2a1a08"/><circle cx="187" cy="81" r="1.5" fill="#fff" opacity="0.55"/><path d="M180,72 Q194,52 204,62" stroke="#c89040" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M173,70 Q184,48 192,55" stroke="#c89040" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="86" y="120" width="15" height="26" fill="#a86c20" rx="4" transform="rotate(-7 86 120)"/><rect x="106" y="122" width="15" height="25" fill="#a86c20" rx="4" transform="rotate(5 106 122)"/><rect x="62" y="118" width="14" height="28" fill="#a06018" rx="4" transform="rotate(7 62 118)"/><rect x="78" y="120" width="14" height="27" fill="#a06018" rx="4"/><path d="M70,100 Q50,95 45,115 Q42,124 50,127" stroke="#b07028" stroke-width="4" fill="none" stroke-linecap="round"/><ellipse cx="115" cy="88" rx="28" ry="13" fill="#d4922e" opacity="0.38"/><text x="130" y="147" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">월스트릿 황소상 · Charging Bull</text></svg>`,
+
+liberty:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lbsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a8ad4"/><stop offset="100%" stop-color="#8ac8f0"/></linearGradient></defs><rect width="260" height="150" fill="url(#lbsk)"/><rect x="0" y="108" width="260" height="42" fill="#1e6090"/><path d="M0,108 Q30,114 60,108 Q90,102 120,108 Q150,114 180,108 Q210,102 240,108 L260,108 L260,114 Q230,120 200,114 Q170,108 140,114 Q110,120 80,114 Q50,108 20,114 L0,114Z" fill="#2a7ab0" opacity="0.55"/><ellipse cx="130" cy="115" rx="42" ry="10" fill="#6a7a50"/><rect x="108" y="85" width="44" height="32" fill="#9a9070"/><rect x="104" y="82" width="52" height="6" fill="#a89a7a" rx="1"/><rect x="118" y="42" width="24" height="44" fill="#6a9870"/><line x1="122" y1="48" x2="120" y2="86" stroke="#5a8860" stroke-width="1.5"/><line x1="130" y1="46" x2="130" y2="86" stroke="#5a8860" stroke-width="1.5"/><line x1="138" y1="48" x2="140" y2="86" stroke="#5a8860" stroke-width="1.5"/><line x1="142" y1="58" x2="162" y2="35" stroke="#6a9870" stroke-width="8" stroke-linecap="round"/><rect x="158" y="22" width="8" height="16" fill="#7aa880" rx="2"/><ellipse cx="162" cy="20" rx="6" ry="5" fill="#ffaa00"/><ellipse cx="162" cy="19" rx="4" ry="4" fill="#ffcc44"/><line x1="118" y1="60" x2="102" y2="68" stroke="#6a9870" stroke-width="7" stroke-linecap="round"/><rect x="90" y="60" width="14" height="20" fill="#7aa880" rx="2" transform="rotate(-15 90 60)"/><circle cx="130" cy="38" r="10" fill="#6a9870"/><polygon points="124,30 126,20 128,30" fill="#6a9870"/><polygon points="128,29 130,18 132,29" fill="#6a9870"/><polygon points="132,30 134,20 136,30" fill="#6a9870"/><polygon points="136,31 138,22 140,31" fill="#6a9870"/><rect x="0" y="90" width="18" height="20" fill="#3a5070" opacity="0.4"/><rect x="22" y="82" width="14" height="28" fill="#3a5070" opacity="0.4"/><rect x="222" y="86" width="18" height="24" fill="#3a5070" opacity="0.4"/><rect x="242" y="78" width="14" height="32" fill="#3a5070" opacity="0.4"/><text x="130" y="148" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">자유의 여신상 · Statue of Liberty</text></svg>`,
+
+groundzero:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gzsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5a7a9a"/><stop offset="100%" stop-color="#b0c8e0"/></linearGradient></defs><rect width="260" height="150" fill="url(#gzsk)"/><polygon points="138,6 152,6 160,122 128,122" fill="#c0ccd8" opacity="0.9"/><polygon points="128,6 138,6 128,122 106,122" fill="#a8b8c8" opacity="0.9"/><line x1="138" y1="2" x2="138" y2="16" stroke="#c8d8e8" stroke-width="2.5"/><rect x="132" y="28" width="8" height="4" fill="#7ab0d0" opacity="0.38" rx="0.5"/><rect x="132" y="38" width="8" height="4" fill="#7ab0d0" opacity="0.38" rx="0.5"/><rect x="132" y="48" width="8" height="4" fill="#7ab0d0" opacity="0.38" rx="0.5"/><rect x="0" y="120" width="260" height="30" fill="#6a7060"/><rect x="18" y="90" width="88" height="50" fill="#1a1a1a" rx="2"/><rect x="22" y="93" width="80" height="44" fill="#080808" rx="1"/><rect x="22" y="93" width="80" height="6" fill="#263040" opacity="0.8"/><rect x="22" y="93" width="6" height="44" fill="#263040" opacity="0.8"/><rect x="96" y="93" width="6" height="44" fill="#263040" opacity="0.8"/><rect x="34" y="105" width="56" height="20" fill="#040404" rx="1"/><line x1="28" y1="96" x2="96" y2="96" stroke="#4a6888" stroke-width="0.8" opacity="0.45"/><line x1="28" y1="99" x2="96" y2="99" stroke="#4a6888" stroke-width="0.8" opacity="0.35"/><rect x="154" y="90" width="88" height="50" fill="#1a1a1a" rx="2"/><rect x="158" y="93" width="80" height="44" fill="#080808" rx="1"/><rect x="158" y="93" width="80" height="6" fill="#263040" opacity="0.8"/><rect x="158" y="93" width="6" height="44" fill="#263040" opacity="0.8"/><rect x="232" y="93" width="6" height="44" fill="#263040" opacity="0.8"/><rect x="170" y="105" width="56" height="20" fill="#040404" rx="1"/><line x1="164" y1="96" x2="232" y2="96" stroke="#4a6888" stroke-width="0.8" opacity="0.45"/><circle cx="106" cy="114" r="8" fill="#3a5a28"/><circle cx="148" cy="114" r="8" fill="#3a5a28"/><circle cx="10" cy="120" r="7" fill="#3a5a28"/><circle cx="250" cy="120" r="7" fill="#3a5a28"/><text x="130" y="147" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">그라운드 제로 · 9/11 Memorial</text></svg>`,
+
+chelsea:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="csk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6898c0"/><stop offset="100%" stop-color="#b8d0e8"/></linearGradient></defs><rect width="260" height="150" fill="url(#csk)"/><rect x="0" y="124" width="260" height="26" fill="#8a8880"/><rect x="0" y="120" width="260" height="5" fill="#7a7870"/><rect x="20" y="35" width="220" height="88" fill="#8a4a28"/><line x1="20" y1="47" x2="240" y2="47" stroke="#7a3e20" stroke-width="1" opacity="0.55"/><line x1="20" y1="59" x2="240" y2="59" stroke="#7a3e20" stroke-width="1" opacity="0.55"/><line x1="20" y1="71" x2="240" y2="71" stroke="#7a3e20" stroke-width="1" opacity="0.55"/><line x1="20" y1="83" x2="240" y2="83" stroke="#7a3e20" stroke-width="1" opacity="0.55"/><line x1="20" y1="95" x2="240" y2="95" stroke="#7a3e20" stroke-width="1" opacity="0.55"/><line x1="20" y1="107" x2="240" y2="107" stroke="#7a3e20" stroke-width="1" opacity="0.55"/><path d="M35,57 L35,90 Q35,100 45,100 L65,100 Q75,100 75,90 L75,57 Q55,49 35,57Z" fill="#3a5878" opacity="0.85"/><path d="M36,58 L36,89 Q36,98 45,98 L65,98 Q74,98 74,89 L74,58 Q55,51 36,58Z" fill="#5a88b8" opacity="0.5"/><path d="M88,57 L88,90 Q88,100 98,100 L118,100 Q128,100 128,90 L128,57 Q108,49 88,57Z" fill="#3a5878" opacity="0.85"/><path d="M89,58 L89,89 Q89,98 98,98 L118,98 Q127,98 127,89 L127,58 Q108,51 89,58Z" fill="#5a88b8" opacity="0.5"/><path d="M141,57 L141,90 Q141,100 151,100 L171,100 Q181,100 181,90 L181,57 Q161,49 141,57Z" fill="#3a5878" opacity="0.85"/><path d="M142,58 L142,89 Q142,98 151,98 L171,98 Q180,98 180,89 L180,58 Q161,51 142,58Z" fill="#5a88b8" opacity="0.5"/><path d="M194,57 L194,90 Q194,100 204,100 L224,100 Q234,100 234,90 L234,57 Q214,49 194,57Z" fill="#3a5878" opacity="0.85"/><path d="M195,58 L195,89 Q195,98 204,98 L224,98 Q233,98 233,89 L233,58 Q214,51 195,58Z" fill="#5a88b8" opacity="0.5"/><rect x="38" y="40" width="30" height="14" fill="#4a7898" opacity="0.6" rx="2"/><rect x="92" y="40" width="30" height="14" fill="#4a7898" opacity="0.6" rx="2"/><rect x="146" y="40" width="30" height="14" fill="#4a7898" opacity="0.6" rx="2"/><rect x="198" y="40" width="30" height="14" fill="#4a7898" opacity="0.6" rx="2"/><rect x="90" y="104" width="80" height="18" fill="#3a2818"/><text x="130" y="116" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#e8c870" font-weight="bold">CHELSEA MARKET</text><text x="130" y="147" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">첼시마켓 · Chelsea Market</text></svg>`,
+
+rockefeller:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="rsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4a7ab0"/><stop offset="100%" stop-color="#a8c8e8"/></linearGradient><linearGradient id="rtw" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c8c0b0"/><stop offset="100%" stop-color="#9a9280"/></linearGradient></defs><rect width="260" height="150" fill="url(#rsk)"/><rect x="0" y="65" width="48" height="75" fill="#a8a090" opacity="0.7"/><rect x="5" y="55" width="34" height="85" fill="#b0a898" opacity="0.8"/><rect x="210" y="65" width="48" height="75" fill="#a8a090" opacity="0.7"/><rect x="218" y="55" width="34" height="85" fill="#b0a898" opacity="0.8"/><rect x="10" y="65" width="8" height="6" fill="#dde8f0" opacity="0.7" rx="0.5"/><rect x="22" y="65" width="8" height="6" fill="#dde8f0" opacity="0.7" rx="0.5"/><rect x="10" y="76" width="8" height="6" fill="#dde8f0" opacity="0.7" rx="0.5"/><rect x="222" y="65" width="8" height="6" fill="#dde8f0" opacity="0.7" rx="0.5"/><rect x="234" y="65" width="8" height="6" fill="#dde8f0" opacity="0.7" rx="0.5"/><rect x="0" y="128" width="260" height="22" fill="#7a7870"/><rect x="50" y="118" width="160" height="18" fill="#9a9890"/><line x1="75" y1="100" x2="75" y2="118" stroke="#888" stroke-width="1.5"/><polygon points="75,100 90,104 75,108" fill="#dc143c"/><line x1="100" y1="100" x2="100" y2="118" stroke="#888" stroke-width="1.5"/><polygon points="100,100 115,104 100,108" fill="#bf0a30"/><line x1="160" y1="100" x2="160" y2="118" stroke="#888" stroke-width="1.5"/><polygon points="160,100 175,104 160,108" fill="#002868"/><line x1="185" y1="100" x2="185" y2="118" stroke="#888" stroke-width="1.5"/><polygon points="185,100 200,104 185,108" fill="#002868"/><rect x="55" y="28" width="150" height="92" fill="url(#rtw)"/><rect x="65" y="18" width="130" height="14" fill="#c0b8a8"/><rect x="78" y="10" width="104" height="10" fill="#b8b0a0"/><rect x="90" y="4" width="80" height="8" fill="#b0a898"/><rect x="100" y="0" width="60" height="6" fill="#a8a090"/><rect x="70" y="38" width="14" height="22" fill="#c8e0f0" rx="1" opacity="0.7"/><rect x="90" y="38" width="14" height="22" fill="#c8e0f0" rx="1" opacity="0.7"/><rect x="120" y="38" width="20" height="22" fill="#c8e0f0" rx="1" opacity="0.7"/><rect x="156" y="38" width="14" height="22" fill="#c8e0f0" rx="1" opacity="0.7"/><rect x="176" y="38" width="14" height="22" fill="#c8e0f0" rx="1" opacity="0.7"/><rect x="65" y="70" width="10" height="13" fill="#c0d8ee" rx="0.5" opacity="0.6"/><rect x="80" y="70" width="10" height="13" fill="#c0d8ee" rx="0.5" opacity="0.6"/><rect x="95" y="70" width="10" height="13" fill="#c0d8ee" rx="0.5" opacity="0.6"/><rect x="115" y="70" width="10" height="13" fill="#c0d8ee" rx="0.5" opacity="0.6"/><rect x="135" y="70" width="10" height="13" fill="#c0d8ee" rx="0.5" opacity="0.6"/><rect x="150" y="70" width="10" height="13" fill="#c0d8ee" rx="0.5" opacity="0.6"/><rect x="165" y="70" width="10" height="13" fill="#c0d8ee" rx="0.5" opacity="0.6"/><rect x="180" y="70" width="10" height="13" fill="#c0d8ee" rx="0.5" opacity="0.6"/><line x1="130" y1="18" x2="130" y2="120" stroke="#d8d0c0" stroke-width="1.5" opacity="0.35"/><line x1="110" y1="28" x2="110" y2="120" stroke="#d8d0c0" stroke-width="1" opacity="0.3"/><line x1="150" y1="28" x2="150" y2="120" stroke="#d8d0c0" stroke-width="1" opacity="0.3"/><circle cx="130" cy="124" r="5" fill="#c8a040" opacity="0.7"/><text x="130" y="148" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">락펠러 센터 · 30 Rockefeller</text></svg>`,
+
+timessquare:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="tsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#080810"/><stop offset="100%" stop-color="#181828"/></linearGradient></defs><rect width="260" height="150" fill="url(#tsk)"/><circle cx="20" cy="12" r="1" fill="white" opacity="0.5"/><circle cx="50" cy="8" r="0.8" fill="white" opacity="0.4"/><circle cx="210" cy="10" r="1" fill="white" opacity="0.5"/><circle cx="240" cy="6" r="0.8" fill="white" opacity="0.4"/><rect x="0" y="20" width="68" height="110" fill="#1a1e2a"/><rect x="10" y="10" width="48" height="120" fill="#22283a"/><rect x="192" y="15" width="68" height="115" fill="#1a1e2a"/><rect x="200" y="8" width="50" height="122" fill="#22283a"/><rect x="100" y="5" width="60" height="115" fill="#181c28"/><rect x="12" y="22" width="46" height="24" fill="#e8181a" rx="2"/><text x="35" y="37" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="white" font-weight="bold">BROADWAY</text><rect x="12" y="50" width="21" height="15" fill="#1a78e8" rx="2"/><rect x="37" y="50" width="21" height="15" fill="#18c818" rx="2"/><rect x="12" y="69" width="46" height="20" fill="#f8a820" rx="2"/><text x="35" y="82" text-anchor="middle" font-family="Arial,sans-serif" font-size="7" fill="#1a1a2e" font-weight="bold">NEW YORK</text><rect x="12" y="93" width="21" height="14" fill="#9918e8" rx="2"/><rect x="37" y="93" width="21" height="14" fill="#e81878" rx="2"/><rect x="200" y="18" width="48" height="28" fill="#1aacf8" rx="2"/><text x="224" y="35" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="white" font-weight="bold">TIMES SQ</text><rect x="200" y="50" width="48" height="22" fill="#e84818" rx="2"/><text x="224" y="64" text-anchor="middle" font-family="Arial,sans-serif" font-size="7" fill="white" font-weight="bold">NYC  2025 ★</text><rect x="200" y="76" width="22" height="16" fill="#28d840" rx="2"/><rect x="226" y="76" width="22" height="16" fill="#f8dc18" rx="2"/><rect x="200" y="96" width="48" height="18" fill="#e818d8" rx="2"/><text x="224" y="108" text-anchor="middle" font-family="Arial,sans-serif" font-size="7" fill="white" font-weight="bold">★ NYC ★</text><rect x="102" y="8" width="56" height="36" fill="#0066aa" rx="2"/><text x="130" y="22" text-anchor="middle" font-family="Arial,sans-serif" font-size="7" fill="white" font-weight="bold">WELCOME TO</text><text x="130" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="#f8dc18" font-weight="bold">NEW YORK</text><rect x="102" y="48" width="56" height="24" fill="#cc0000" rx="2"/><text x="130" y="63" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="white" font-weight="bold">BROADWAY</text><rect x="0" y="122" width="260" height="28" fill="#141414"/><line x1="80" y1="122" x2="80" y2="150" stroke="#333" stroke-width="1"/><line x1="180" y1="122" x2="180" y2="150" stroke="#333" stroke-width="1"/><rect x="105" y="128" width="50" height="17" fill="#f8c800" rx="2"/><rect x="108" y="131" width="22" height="11" fill="#88aacc" rx="1" opacity="0.7"/><rect x="134" y="131" width="16" height="11" fill="#88aacc" rx="1" opacity="0.7"/><circle cx="115" cy="147" r="3" fill="#222"/><circle cx="145" cy="147" r="3" fill="#222"/><line x1="36" y1="122" x2="40" y2="150" stroke="#e81a1a" stroke-width="2" opacity="0.22"/><line x1="224" y1="122" x2="221" y2="150" stroke="#1a78e8" stroke-width="2" opacity="0.22"/><line x1="130" y1="122" x2="130" y2="150" stroke="#f8dc18" stroke-width="2" opacity="0.18"/><text x="130" y="147" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#f8f0c0" font-weight="bold">타임스퀘어 · Times Square</text></svg>`,
+
+edge:`<svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a6a98"/><stop offset="100%" stop-color="#7ab0d8"/></linearGradient><linearGradient id="etw" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#8898a8"/><stop offset="100%" stop-color="#c8d0d8"/></linearGradient></defs><rect width="260" height="150" fill="url(#esk)"/><rect x="0" y="70" width="24" height="64" fill="#3a4858" opacity="0.5"/><rect x="20" y="55" width="18" height="79" fill="#3a4858" opacity="0.6"/><rect x="196" y="60" width="24" height="74" fill="#3a4858" opacity="0.5"/><rect x="220" y="48" width="18" height="86" fill="#3a4858" opacity="0.6"/><rect x="238" y="65" width="22" height="69" fill="#3a4858" opacity="0.5"/><rect x="0" y="130" width="260" height="20" fill="#2a5878"/><path d="M0,130 Q40,126 80,130 Q120,134 160,130 Q200,126 260,130" stroke="#4a88b8" stroke-width="1.5" fill="none" opacity="0.55"/><rect x="140" y="0" width="90" height="135" fill="url(#etw)"/><rect x="148" y="12" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="162" y="12" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="176" y="12" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="190" y="12" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="204" y="12" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="148" y="25" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="162" y="25" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="176" y="25" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="190" y="25" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="204" y="25" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="148" y="38" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="162" y="38" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="176" y="38" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="190" y="38" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="204" y="38" width="10" height="7" fill="#c8e0f0" rx="0.5" opacity="0.6"/><rect x="70" y="60" width="72" height="18" fill="#a8b8c8" rx="2"/><rect x="68" y="60" width="4" height="18" fill="#9098a8"/><rect x="72" y="62" width="66" height="14" fill="#c8e8f8" opacity="0.32" rx="1"/><rect x="70" y="58" width="72" height="4" fill="#d0e8f8" opacity="0.6" rx="1"/><rect x="70" y="76" width="72" height="3" fill="#d0e8f8" opacity="0.6" rx="1"/><rect x="70" y="58" width="4" height="22" fill="#d0e8f8" opacity="0.65" rx="1"/><circle cx="90" cy="65" r="3.5" fill="#2a3848"/><rect x="88" y="68" width="4" height="7" fill="#2a3848" rx="1"/><circle cx="110" cy="64" r="3.5" fill="#3a2818"/><rect x="108" y="67" width="4" height="7" fill="#3a2818" rx="1"/><circle cx="126" cy="65" r="3.5" fill="#2a3848"/><rect x="124" y="68" width="4" height="7" fill="#2a3848" rx="1"/><rect x="5" y="96" width="15" height="34" fill="#3a4858" opacity="0.4"/><rect x="24" y="90" width="14" height="40" fill="#3a4858" opacity="0.4"/><rect x="44" y="98" width="17" height="32" fill="#3a4858" opacity="0.4"/><rect x="152" y="54" width="34" height="11" fill="#ff6b00" rx="2"/><text x="169" y="63" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="white" font-weight="bold">EDGE</text><text x="130" y="148" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="bold">엣지 전망대 · Edge at Hudson Yards</text></svg>`
+
+};
+
+/* ── HELPERS ── */
+function mkI(color,emoji,sz=30){
+  return L.divIcon({className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2],
+    html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(255,255,255,.97);border:3px solid ${color};display:flex;align-items:center;justify-content:center;font-size:${sz*.42}px;box-shadow:0 2px 8px rgba(0,0,0,.35)">${emoji}</div>`});
+}
+
+function pu(name,day,addr,desc,color,imgKey){
+  const img = imgKey && IMGS[imgKey]
+    ? `<div style="width:100%;line-height:0">${IMGS[imgKey]}</div>`
+    : '';
+  return `<div style="min-width:${imgKey?'248':'200'}px;max-width:248px">
+    ${img}
+    <div class="pu-body">
+      <div class="pd" style="color:${color}">${day}</div>
+      <div class="pn">${name}</div>
+      <div class="pa">📍 ${addr}</div>
+      ${desc?`<div class="pdesc">${desc}</div>`:''}
+    </div>
+  </div>`;
+}
+
+/* ── MARKERS ── */
+// Departure
+[[43.6865,-79.5915,'Crowne Plaza 토론토','33 Carlson Ct, Toronto, ON','출발 집결지','🚌'],
+ [43.5930,-79.6457,'미시사가 출발','189 Rathburn Rd W, Mississauga','','🚌'],
+ [43.4005,-79.7318,'옥빌 출발 (SilverCity)','3531 Wyecroft Rd, Oakville','','🚌'],
+ [43.0946,-79.0872,"나이아가라 (Hershey's)",'5701 Falls Ave, Niagara Falls','마지막 탑승지','🚌'],
+].forEach(([lat,lng,n,a,d,e])=>L.marker([lat,lng],{icon:mkI(C.dep,e,34)}).addTo(map).bindPopup(pu(n,'출발지',a,d,C.dep)));
+
+// Day 1 (no images)
+[[41.7940,-77.0778,'QQ Buffet – 점심','181 N Main St, Mansfield, PA 16933','중식 포함','🍜',C.meal],
+ [40.8014,-76.8615,'Walmart 휴게소','980 Susquehanna Trail, Selinsgrove, PA','이동 중 휴게소','🛒',C.d1],
+ [39.6618,-77.7194,'Supreme Buffet – 저녁','545 Dual Hwy, Hagerstown, MD 21740','석식 포함','🍽️',C.meal],
+ [39.6654,-77.7218,'Hampton Inn Hagerstown','1716 Dual Hwy, Hagerstown, MD 21740','1일차 숙소','🏨',C.hotel],
+].forEach(([lat,lng,n,a,d,e,c])=>L.marker([lat,lng],{icon:mkI(c,e,c===C.hotel?34:c===C.meal?26:28)}).addTo(map).bindPopup(pu(n,'1일차',a,d,C.d1)));
+
+// Day 2 — with SVG illustrations
+const d2data = [
+  [38.6636,-78.4627,'루레이 동굴 (선택 U$38)','101 Cave Hill Rd, Luray, VA 22835','NatGeo 선정 가장 아름다운 동굴','🦇',C.d2,'luray'],
+  [38.8893,-77.0502,'링컨 기념관','297 Henry Bacon Dr NW, Washington, DC','한국전참전용사 기념비 포함','🏛️',C.d2,'lincoln'],
+  [38.8988,-77.0401,'백악관 (하차/탑승)','444 17th St NW → 1580 H St NW, DC','White House Drop-off & Pick-up','🏛️',C.d2,'whitehouse'],
+  [38.8881,-77.0262,'스미스소니언 박물관','900 Jefferson Dr SW, Washington, DC 20560','항공우주·국립미술·자연사박물관','🏛️',C.d2,'smithsonian'],
+  [39.1661,-76.6244,'Hibachi Buffet – 저녁','6619 Governor Ritchie Hwy, Glen Burnie, MD','석식 포함','🍽️',C.meal,null],
+  [40.0027,-74.8118,'Courtyard by Marriott','30 Western Dr, Mt Holly, NJ 08060','2일차 숙소','🏨',C.hotel,null],
+];
+d2data.forEach(([lat,lng,n,a,d,e,c,img])=>L.marker([lat,lng],{icon:mkI(c,e,c===C.hotel?34:c===C.meal?26:30)}).addTo(map).bindPopup(pu(n,'2일차',a,d,C.d2,img)));
+
+// Day 3 — with SVG illustrations
+const d3data = [
+  [40.7083,-74.0148,'월스트릿 · 황소상','11 Trinity Pl, New York, NY 10006','황소상 · 세계 금융의 중심','🐂',C.d3,'bull'],
+  [40.7059,-74.0042,'자유의 여신상 페리 (선택)','87 South St, New York, NY 10038','선택관광 U$37','🛳️',C.d3,'liberty'],
+  [40.7115,-74.0148,'그라운드 제로','110 West St, New York, NY 10006','9.11 메모리얼 & 뮤지엄','🕊️',C.d3,'groundzero'],
+  [40.7424,-74.0076,'첼시마켓 · 하이라인','60 10th Ave, New York, NY 10014','High Line · Little Island','🛒',C.d3,'chelsea'],
+  [40.7306,-73.9983,'워싱턴 광장 · NYU','4 E 8th St, New York, NY 10003','New York University','🎓',C.d3,null],
+  [40.7587,-73.9787,'락펠러 센터 · 5번가','54 W 50th St, New York, NY 10112','명품 쇼핑거리','🏙️',C.d3,'rockefeller'],
+  [40.7456,-73.9882,'저녁: 코리아타운','308 5th Ave, New York, NY 10001','석식 포함','🍽️',C.meal,null],
+  [40.7566,-73.9903,'타임스퀘어','229 W 42nd St, New York, NY 10036','브로드웨이 선택관광','✨',C.d3,'timessquare'],
+  [40.7536,-74.0040,'엣지 전망대 · 허드슨야드','535 W 33rd St, New York, NY 10001','선택관광 U$48 · The Vessel','🐚',C.d3,'edge'],
+  [40.8673,-74.3895,'Sheraton Parsippany','199 Smith Rd, Parsippany, NJ 07054','3일차 숙소','🏨',C.hotel,null],
+];
+d3data.forEach(([lat,lng,n,a,d,e,c,img])=>L.marker([lat,lng],{icon:mkI(c,e,c===C.hotel?34:c===C.meal?26:30)}).addTo(map).bindPopup(pu(n,'3일차',a,d,C.d3,img)));
+
+// Day 4
+[[41.3192,-74.1022,'우드버리 커먼 아웃렛','498 Red Apple Ct, Central Valley, NY 10917','220여개 명품브랜드 · 미국 1위 아웃렛','🛍️',C.d4],
+ [42.6120,-76.1430,'I-81 Preble 휴게소','Hwy 81 Preble Rest Area, NY','귀환 경유 휴게소','🛣️',C.d4],
+ [43.0946,-79.0872,'캐나다 국경 재입국','Niagara Falls 국경','면세점 쇼핑 후 캐나다 입국','🛂',C.d4],
+ [43.6865,-79.5915,'토론토 도착 (종료)','33 Carlson Ct, Toronto, ON M9W 6H5','여행 종료 · 해산','🏠',C.hotel],
+].forEach(([lat,lng,n,a,d,e,c])=>L.marker([lat,lng],{icon:mkI(c,e,c===C.hotel?34:28)}).addTo(map).bindPopup(pu(n,'4일차',a,d,C.d4)));
+
+/* ── ROUTES ── */
+L.polyline([[43.6865,-79.5915],[43.5930,-79.6457],[43.4005,-79.7318],[43.0946,-79.0872]],{color:C.dep,weight:2.5,opacity:.7,dashArray:'5,5'}).addTo(map);
+L.polyline([[43.0946,-79.0872],[42.9,-78.8],[42.3,-78.2],[41.7940,-77.0778],[40.8014,-76.8615],[40.2,-77.0],[39.6618,-77.7194],[39.6654,-77.7218]],{color:C.d1,weight:2.5,opacity:.8}).addTo(map);
+L.polyline([[39.6654,-77.7218],[38.9,-78.2],[38.6636,-78.4627],[38.8,-77.7],[38.8893,-77.0502],[38.8988,-77.0401],[38.8881,-77.0262],[39.0,-76.9],[39.1661,-76.6244],[39.7,-75.3],[40.0027,-74.8118]],{color:C.d2,weight:2.5,opacity:.8}).addTo(map);
+L.polyline([[40.0027,-74.8118],[40.5,-74.2],[40.6892,-74.0445],[40.7083,-74.0148],[40.7059,-74.0042],[40.7115,-74.0148],[40.7424,-74.0076],[40.7306,-73.9983],[40.7456,-73.9882],[40.7587,-73.9787],[40.7566,-73.9903],[40.7536,-74.0040],[40.82,-74.15],[40.8673,-74.3895]],{color:C.d3,weight:2.5,opacity:.8}).addTo(map);
+L.polyline([[40.8673,-74.3895],[41.1,-74.2],[41.3192,-74.1022],[41.8,-74.5],[42.0,-75.8],[42.6120,-76.1430],[43.0,-77.5],[43.0946,-79.0872],[43.35,-79.5],[43.5930,-79.6457],[43.6865,-79.5915]],{color:C.d4,weight:2.5,opacity:.8}).addTo(map);
+
+/* ── LEGEND ── */
+const leg=L.control({position:'topright'});
+leg.onAdd=function(){
+  const d=L.DomUtil.create('div','lbox');
+  d.innerHTML=`<div class="ltitle">여행 동선 · 실제 경유지 기반</div>
+    <div class="li"><div class="ldot" style="background:${C.dep}"></div>출발지 (토론토권)</div>
+    <div class="li"><div class="lline" style="background:${C.d1}"></div>1일차 – Hagerstown, MD</div>
+    <div class="li"><div class="lline" style="background:${C.d2}"></div>2일차 – 워싱턴 D.C</div>
+    <div class="li"><div class="lline" style="background:${C.d3}"></div>3일차 – 뉴욕 맨하탄</div>
+    <div class="li"><div class="lline" style="background:${C.d4}"></div>4일차 – Woodbury → 귀환</div>
+    <div style="border-top:1px solid rgba(0,0,0,.08);margin:6px 0 4px"></div>
+    <div class="li"><div class="ldot" style="background:${C.meal}"></div>식사 포함 장소</div>
+    <div class="li"><div class="ldot" style="background:${C.hotel}"></div>숙박 호텔</div>
+    <div style="border-top:1px solid rgba(0,0,0,.08);margin:5px 0 3px"></div>
+    <div class="li" style="color:#888;font-size:9px">🖼️ 마커 클릭 시 랜드마크 그림 표시</div>`;
+  return d;
+};
+leg.addTo(map);
+</script>
 </body>
 </html>
