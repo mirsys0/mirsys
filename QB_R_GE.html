@@ -3,310 +3,263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>파란여행 | 퀘벡 오프라인 맛집 지도 🍁</title>
+    <title>Restaurants de Québec</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* 모바일 화면 꽉 채우기 및 스크롤 바운스 방지 */
-        body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-            background-color: #fdf8f2;
-            position: fixed; 
-            overflow: hidden;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            overflow: hidden; 
         }
 
-        .container {
-            display: flex;
-            flex-direction: column;
-            width: 100%; height: 100%;
+        /* 로딩 스크린 */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3; border-top: 4px solid #2b2d42;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loading-text { font-size: 16px; font-weight: 700; color: #2b2d42; margin-bottom: 8px;}
+        #loading-subtext { font-size: 13px; color: #6c757d; }
 
-        /* ── 상단 헤더 (파란여행 스타일) ── */
-        header {
-            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 50%, #c0392b 100%);
-            padding: 12px 15px;
-            color: white;
-            display: flex; flex-direction: column; justify-content: center;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-            z-index: 2000;
-        }
-        .header-title { font-size: 18px; font-weight: 900; margin-bottom: 3px; }
-        .header-sub { font-size: 11px; opacity: 0.9; }
-        .header-badge { display: inline-block; background: white; color: #c0392b; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; margin-right: 5px; vertical-align: middle;}
+        #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; width: 100vw; height: 100dvh; z-index: 1; }
 
-        /* ── 1. 오프라인 CSS 지도 영역 ── */
-        #map-area {
-            flex: 1;
-            position: relative;
-            background-color: #eef4ff; /* 세인트 로렌스 강 색상 */
-            overflow: hidden;
+        #top-nav {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; background: rgba(255, 255, 255, 0.95); padding: 4px;
+            border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 1000; backdrop-filter: blur(5px);
         }
+        .nav-btn {
+            background: transparent; border: none; padding: 10px 20px; border-radius: 25px;
+            font-size: 14px; font-weight: 600; color: #6c757d; cursor: pointer; transition: all 0.3s ease;
+        }
+        .nav-btn.active { background: #2b2d42; color: white; box-shadow: 0 2px 8px rgba(43,45,66,0.3); }
 
-        /* 윗동네 육지 */
-        .land-upper {
-            position: absolute; top: -10%; left: -15%;
-            width: 80%; height: 90%;
-            background-color: #f7ede2;
-            border-radius: 40% 50% 60% 30%;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.05);
+        #bottom-sheet {
+            position: absolute; bottom: 0; left: 0; width: 100vw; height: 45dvh;
+            background: white; border-radius: 24px 24px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            z-index: 1000; display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-        /* 아랫동네 육지 */
-        .land-lower {
-            position: absolute; top: 10%; right: -5%;
-            width: 45%; height: 65%;
-            background-color: #e8f0e6;
-            border-radius: 50% 30% 40% 60%;
-            box-shadow: -5px 5px 15px rgba(0,0,0,0.05);
-        }
+        #bottom-sheet.minimized { transform: translateY(calc(100% - 60px)); }
 
-        /* 배경 글자 */
-        .map-label {
-            position: absolute; font-weight: bold; color: #b0a59a;
-            font-size: 18px; opacity: 0.7; z-index: 1; pointer-events: none;
-        }
+        .drag-handle { width: 100%; height: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .drag-bar { width: 40px; height: 5px; background: #dee2e6; border-radius: 10px; }
+        .sheet-header { padding: 0 20px 10px; font-size: 18px; font-weight: 700; color: #2b2d42; display: flex; justify-content: space-between; align-items: center; }
 
-        /* 📌 핀(마커) 스타일 */
-        .pin {
-            position: absolute; width: 34px; height: 34px;
-            background: white; border-radius: 50% 50% 50% 0; /* 물방울 모양 */
-            display: flex; justify-content: center; align-items: center;
-            font-size: 16px; font-weight: bold; color: white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transform: translate(-50%, -100%) rotate(-45deg);
-            cursor: pointer; z-index: 10;
-        }
-        .pin span { transform: rotate(45deg); } /* 안의 글자는 똑바로 */
-        .pin.upper { background: #e05c2a; border: 2px solid white; }
-        .pin.lower { background: #2a7de0; border: 2px solid white; }
-        .pin.landmark { background: #d4a017; border: 2px solid white; z-index: 5;}
-        .pin.active {
-            transform: translate(-50%, -100%) rotate(-45deg) scale(1.3);
-            z-index: 20; box-shadow: 0 0 15px rgba(224, 92, 42, 0.6);
-        }
+        #place-list { flex-grow: 1; overflow-y: auto; padding: 0 15px 20px; -webkit-overflow-scrolling: touch; }
+        .place-card { display: flex; align-items: center; padding: 15px; background: #ffffff; border: 1px solid #f1f3f5; border-radius: 16px; margin-bottom: 12px; cursor: pointer; }
+        .place-emoji { font-size: 28px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 12px; margin-right: 15px; flex-shrink: 0; }
+        .place-info { flex-grow: 1; }
+        .place-name { font-size: 15px; font-weight: 700; color: #2b2d42; margin-bottom: 4px; }
+        .place-desc { font-size: 12px; color: #6c757d; line-height: 1.4; }
 
-        /* 💬 상세정보 팝업창 (화면 중앙 고정 방식) */
-        #popup-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 99; display: none;
+        .custom-marker {
+            background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: 22px; box-shadow: 0 3px 8px rgba(0,0,0,0.2); transition: transform 0.2s;
         }
-        #popup {
-            position: absolute; background: white; border-radius: 15px;
-            width: 85%; max-width: 320px;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 100; display: none; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        .pu-head { padding: 15px; color: white; position: relative; }
-        .pu-head.upper { background: linear-gradient(135deg, #e05c2a, #f08040); }
-        .pu-head.lower { background: linear-gradient(135deg, #2a7de0, #5090f0); }
-        .pu-tag { display: inline-block; background: rgba(255,255,255,0.3); font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-bottom: 5px;}
-        .pu-title { font-size: 16px; font-weight: 900; line-height: 1.2; padding-right: 20px;}
-        .pu-close { position: absolute; top: 10px; right: 15px; font-size: 20px; font-weight: bold; cursor: pointer; opacity: 0.8;}
-        
-        .pu-body { padding: 15px; font-size: 12px; color: #333; line-height: 1.5; }
-        .pu-desc { margin-bottom: 10px; font-weight: bold; color: #2a1a0a;}
-        .pu-box { background: #fffbec; border: 1px solid #f0c040; border-radius: 8px; padding: 10px; margin-top: 10px; }
-        .pu-info-row { display: flex; margin-bottom: 5px; }
-        .pu-info-icon { width: 20px; flex-shrink: 0; }
+        .marker-upper { border: 2px solid #ef233c; } 
+        .marker-lower { border: 2px solid #3a86ff; } 
 
-        /* ── 2. 하단 스와이프 메뉴 ── */
-        #bottom-panel {
-            height: 130px; background: white; border-top: 1px solid #e8ddd4;
-            z-index: 1000; display: flex; flex-direction: column;
-            padding-bottom: env(safe-area-inset-bottom); /* 아이폰 하단 여백 보호 */
-        }
-        .panel-title { font-size: 12px; font-weight: bold; color: #888; text-align: center; margin: 8px 0 4px 0; }
-        
-        #card-list {
-            flex: 1; display: flex; overflow-x: auto; overflow-y: hidden;
-            -webkit-overflow-scrolling: touch; padding: 0 10px 10px 10px; align-items: center;
-        }
-        #card-list::-webkit-scrollbar { display: none; }
-
-        /* 맛집 카드 */
-        .place-card {
-            flex: 0 0 auto; width: 140px; height: 75px; margin-right: 10px;
-            background: #fff; border: 2px solid #f0e8e0; border-radius: 12px;
-            display: flex; padding: 8px; cursor: pointer; transition: 0.2s;
-        }
-        .place-card.upper { border-left: 4px solid #e05c2a; }
-        .place-card.lower { border-left: 4px solid #2a7de0; }
-        .place-card.active { background: #fff5f0; border-color: #e05c2a; }
-        .place-card.lower.active { background: #eef4ff; border-color: #2a7de0; }
-        
-        .card-emoji { font-size: 24px; margin-right: 8px; display: flex; align-items: center;}
-        .card-text { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;}
-        .card-name { font-size: 11px; font-weight: bold; color: #2a1a0a; line-height: 1.2; margin-bottom: 3px; word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;}
-        .card-tag { font-size: 9px; color: #888; }
+        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 4px; }
+        .leaflet-popup-content { margin: 12px; }
+        .popup-title { font-size: 16px; font-weight: 700; color: #2b2d42; margin: 0 0 6px 0; display: flex; align-items: center; gap: 6px; }
+        .popup-desc { font-size: 13px; color: #495057; margin-bottom: 8px; line-height: 1.4; }
+        .popup-addr { font-size: 11px; color: #adb5bd; border-top: 1px solid #f1f3f5; padding-top: 8px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <div class="header-title"><span class="header-badge">파란여행</span>올드 퀘벡 맛집 지도</div>
-            <div class="header-sub">어퍼타운 15곳 + 로워타운 6곳 상세정보</div>
-        </header>
-
-        <div id="map-area">
-            <div class="land-upper"></div>
-            <div class="land-lower"></div>
-            <div class="map-label" style="top: 15%; left: 10%;">🎈 Upper Town</div>
-            <div class="map-label" style="top: 25%; right: 5%;">⚓ Lower Town</div>
-
-            <div id="pins-container"></div>
-            
-            <div id="popup-overlay" onclick="closePopup()"></div>
-            <div id="popup">
-                <div id="pu-head" class="pu-head upper">
-                    <div class="pu-close" onclick="closePopup()">✕</div>
-                    <div class="pu-tag" id="pu-tag">태그</div>
-                    <div class="pu-title" id="pu-title">이름</div>
-                </div>
-                <div class="pu-body">
-                    <div class="pu-desc" id="pu-desc">설명</div>
-                    <div class="pu-box">
-                        <div class="pu-info-row"><div class="pu-info-icon">⭐</div><div id="pu-best" style="font-weight:bold; color:#b07800;">추천메뉴</div></div>
-                        <div class="pu-info-row"><div class="pu-info-icon">🕐</div><div id="pu-hours" style="color:#555;">시간</div></div>
-                        <div class="pu-info-row"><div class="pu-info-icon">📞</div><div id="pu-tel" style="color:#888;">전화번호</div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="bottom-panel">
-            <div class="panel-title">👇 아래 카드를 좌우로 밀어서 터치하세요</div>
-            <div id="card-list">
-                </div>
-        </div>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div id="loading-text">지도를 준비하고 있습니다...</div>
+        <div id="loading-subtext">실시간 주소 변환 중 (최대 15초 소요)</div>
     </div>
 
+    <div id="map"></div>
+
+    <div id="top-nav">
+        <button id="btn-upper" class="nav-btn active" onclick="filterPlaces('upper')">Upper Town</button>
+        <button id="btn-lower" class="nav-btn" onclick="filterPlaces('lower')">Lower Town</button>
+    </div>
+
+    <div id="bottom-sheet">
+        <div class="drag-handle" onclick="toggleSheet()">
+            <div class="drag-bar"></div>
+        </div>
+        <div class="sheet-header">
+            <span id="sheet-title">Upper Town</span>
+        </div>
+        <div id="place-list"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 파란여행 원본 파일의 상세 데이터 + 오프라인 지도용 가상 X,Y 좌표 결합
-        var foodPlaces = [
-            { id: 1, num: '1', name: "Le Beffroi Steak House", emoji: "🥩", x: 20, y: 30, type: "upper", tag: "스테이크 전문", desc: "St-Jean 성문 바로 앞! 올드퀘벡 최고 스테이크 맛집. 단풍나무 숯으로 구워요.", best: "안심 스테이크 (Filet Mignon)", hours: "월~목·일 7am~9pm / 금·토 7am~10pm", tel: "418-380-2638" },
-            { id: 2, num: '2', name: "Cochon Dingue (St-Jean)", emoji: "🍖", x: 28, y: 25, type: "upper", tag: "퀘벡 폭립", desc: "유튜버들에게 소개된 인기 맛집 '미친돼지'! 힐튼에서 걸어가기 딱 좋아요.", best: "Quebec Pork Ribs (퀘벡 폭립)", hours: "매일 7:30am~9/10pm", tel: "418-523-2013" },
-            { id: 3, num: '3', name: "Au Petit Coin Breton", emoji: "🫕", x: 35, y: 35, type: "upper", tag: "그라탕·크레페", desc: "1963년 오픈! 3대째 이어온 올드퀘벡 대표 그라탕 전문점.", best: "그라탕·샐러드·크레페", hours: "매일 8am~9/10pm", tel: "418-694-0758" },
-            { id: 4, num: '4', name: "Pub Saint-Alexandre", emoji: "🍺", x: 42, y: 20, type: "upper", tag: "펍·맥주·재즈", desc: "250여 종 맥주와 재즈·블루스 라이브 공연. 'The Best Pub in Town'!", best: "맥주 250종 + 라이브 재즈", hours: "매일 11am~12am", tel: "418-694-0015" },
-            { id: 5, num: '5', name: "Paillard St-Jean", emoji: "🥐", x: 46, y: 30, type: "upper", tag: "베이커리·카페", desc: "프랑스 스타일 베이커리! 커피 한 잔과 함께 아침을 시작하기 딱 좋아요.", best: "크로아상·마카롱", hours: "매일 6am~6/7pm", tel: "418-692-1221" },
-            { id: 6, num: '6', name: "Chez Boulay", emoji: "🐟", x: 52, y: 38, type: "upper", tag: "파인다이닝", desc: "두 스타 셰프가 운영하는 고급 레스토랑! 민물고기 요리 일품.", best: "가스페 가리비·메이플 크렘브륄레", hours: "점심 11:30~ / 저녁 17:00~", tel: "418-380-8166" },
-            { id: 7, num: '7', name: "McDonalds", emoji: "🍔", x: 58, y: 24, type: "upper", tag: "패스트푸드", desc: "이것저것 다 귀찮을 때! 새벽 2시까지 열려있어요.", best: "빅맥·감자튀김", hours: "매일 5am~2am", tel: "418-692-4848" },
-            { id: 8, num: '8', name: "Le Casse-Crepe", emoji: "🫓", x: 40, y: 45, type: "upper", tag: "크레페 전문", desc: "눈앞에서 만들어주는 크레페! 인스타·유튜버들이 사랑하는 곳.", best: "메밀 크레페 (Buckwheat)", hours: "매일 7:30am~10:30pm", tel: "418-692-0438" },
-            { id: 9, num: '9', name: "Portofino", emoji: "🍕", x: 56, y: 50, type: "upper", tag: "이탈리안", desc: "작지만 유명한 이탈리안 레스토랑! 화덕 피자 20여 종.", best: "화덕 피자·수제 파스타", hours: "매일 11am~10pm", tel: "418-692-8888" },
-            { id: 10, num: '10', name: "Restaurant 1640", emoji: "🐌", x: 45, y: 56, type: "upper", tag: "프렌치 요리", desc: "1640년부터 시작한 역사와 전통의 레스토랑! 달팽이 요리.", best: "달팽이 요리(Escargot)", hours: "매일 8:30am~9pm", tel: "418-694-9063" },
-            { id: 11, num: '11', name: "Le Chic Shack", emoji: "🍔", x: 50, y: 64, type: "upper", tag: "수제버거", desc: "퀘벡 유명 수제 버거집! 항상 줄이 길어요.", best: "쉑버거·푸틴·에이드", hours: "매일 8am~9pm", tel: "418-692-1485" },
-            { id: 12, num: '12', name: "Aux Anciens", emoji: "🍁", x: 35, y: 65, type: "upper", tag: "퀘벡 전통요리", desc: "1675년 지어진 올드퀘벡 최고령 건물! 17세기 분위기.", best: "점심 코스 요리", hours: "매일 12pm~10:30pm", tel: "418-692-1627" },
-            { id: 13, num: '13', name: "Parmesan", emoji: "🦞", x: 42, y: 74, type: "upper", tag: "이탈리안·씨푸드", desc: "퀘벡커들이 기념일에 찾는 곳! 아코디언 라이브 공연.", best: "해산물 파스타·랍스터", hours: "매일 11/11:30am~10pm", tel: "418-692-0341" },
-            { id: 14, num: '14', name: "Resto La Buche", emoji: "🦌", x: 55, y: 72, type: "upper", tag: "사냥꾼 컨셉", desc: "올드퀘벡 핫플레이스! 사냥꾼 컨셉 인테리어.", best: "Sugar Shack Plate", hours: "매일 8am~9:30/10pm", tel: "418-694-7272" },
-            { id: 15, num: '15', name: "Marché Richelieu", emoji: "🛒", x: 12, y: 45, type: "upper", tag: "마트·맥주", desc: "올드퀘벡 최대 마켓! 퀘벡 맥주·스낵·컵라면 등 다 있어요.", best: "퀘벡 수제 맥주", hours: "매일 8am~9pm", tel: "418-522-4889" },
+        // 1. 식당 데이터 (lat, lng 삭제 / 검색 정확도를 위해 searchAddress 항목 추가)
+        const foodPlaces = [
+            // Upper Town
+            { id: 1, name: "Le Beffroi Steak House", emoji: "🥩", type: "upper", desc: "단풍나무 숯으로 구운 최고의 안심 스테이크", address: "775 Av. Honoré-Mercier", searchAddress: "775 Avenue Honoré-Mercier, Québec, QC, Canada" },
+            { id: 2, name: "Cochons Dingues (St-Jean)", emoji: "🐷", type: "upper", desc: "유튜버들도 칭찬한 고기(폭립) 맛집", address: "1014 Rue Saint-Jean", searchAddress: "1014 Rue Saint-Jean, Québec, QC, Canada" },
+            { id: 3, name: "Au Petit Coin Breton", emoji: "🥗", type: "upper", desc: "할아버지 때부터 내려온 그라탕과 크레페 집", address: "1029 Rue Saint-Jean", searchAddress: "1029 Rue Saint-Jean, Québec, QC, Canada" },
+            { id: 4, name: "Pub Saint-Alexandre", emoji: "🎵", type: "upper", desc: "맥주와 신나는 라이브 재즈 음악", address: "1087 Rue Saint-Jean", searchAddress: "1087 Rue Saint-Jean, Québec, QC, Canada" },
+            { id: 5, name: "Paillard", emoji: "🥐", type: "upper", desc: "바삭바삭 크로아상과 달콤한 마카롱 빵집", address: "1097 Rue Saint-Jean", searchAddress: "1097 Rue Saint-Jean, Québec, QC, Canada" },
+            { id: 6, name: "Chez Boulay", emoji: "🐟", type: "upper", desc: "아주 유명한 요리사님이 해주는 민물고기 요리", address: "1110 Rue Saint-Jean", searchAddress: "1110 Rue Saint-Jean, Québec, QC, Canada" },
+            { id: 7, name: "McDonald's", emoji: "🍟", type: "upper", desc: "다 귀찮고 익숙한 맛이 당길 때!", address: "1151 Rue Saint-Jean", searchAddress: "1151 Rue Saint-Jean, Québec, QC, Canada" },
+            { id: 8, name: "Le Casse-Crêpe Breton", emoji: "🥞", type: "upper", desc: "요리하는 모습을 직접 구경하며 먹는 크레페", address: "1136 Rue Saint-Jean", searchAddress: "1136 Rue Saint-Jean, Québec, QC, Canada" },
+            { id: 9, name: "Portofino", emoji: "🍕", type: "upper", desc: "뜨거운 화덕 피자와 수제 파스타", address: "54 Rue Couillard", searchAddress: "54 Rue Couillard, Québec, QC, Canada" },
+            { id: 10, name: "Restaurant 1640", emoji: "🐌", type: "upper", desc: "어린이 메뉴와 달팽이 요리가 있는 오래된 식당", address: "16 Rue Sainte-Anne", searchAddress: "16 Rue Sainte-Anne, Québec, QC, Canada" },
+            { id: 11, name: "Le Chic Shack", emoji: "🍔", type: "upper", desc: "항상 줄을 서서 먹는 수제 햄버거", address: "15 Rue du Fort", searchAddress: "15 Rue du Fort, Québec, QC, Canada" },
+            { id: 12, name: "Aux Anciens Canadiens", emoji: "🍲", type: "upper", desc: "퀘벡에서 가장 오래된 집에서 먹는 전통 요리", address: "34 Rue Saint-Louis", searchAddress: "34 Rue Saint-Louis, Québec, QC, Canada" },
+            { id: 13, name: "Restaurant Parmesan", emoji: "🍝", type: "upper", desc: "아코디언 연주를 들으며 먹는 해산물 파스타", address: "38 Rue Saint-Louis", searchAddress: "38 Rue Saint-Louis, Québec, QC, Canada" },
+            { id: 14, name: "La Bûche", emoji: "🏕️", type: "upper", desc: "숲속 사냥꾼의 집처럼 생긴 퀘벡 백반집", address: "49 Rue Saint-Louis", searchAddress: "49 Rue Saint-Louis, Québec, QC, Canada" },
+            { id: 15, name: "Marché Richelieu", emoji: "🛒", type: "upper", desc: "배고플 때 컵라면과 퀘벡 과자를 살 수 있는 마트", address: "850 Rue Saint-Jean", searchAddress: "850 Rue Saint-Jean, Québec, QC, Canada" },
             
-            { id: 'A', num: 'A', name: "Le Lapin Sauté", emoji: "🐰", x: 75, y: 30, type: "lower", tag: "토끼고기", desc: "쁘띠 샹플랭 거리의 분위기 있는 레스토랑! 토끼고기 요리가 별미.", best: "토끼고기·오리고기", hours: "매일 10/11am~9pm", tel: "418-692-5325" },
-            { id: 'B', num: 'B', name: "Cochon Dingue", emoji: "🍖", x: 82, y: 42, type: "lower", tag: "폭립 본점", desc: "파리 비스트로 느낌의 '미친돼지' 본점! 벽돌 인테리어.", best: "퀘벡 폭립·연어 타르타르", hours: "매일 8am~9pm", tel: "418-692-2013" },
-            { id: 'C', num: 'C', name: "Queues de Castor", emoji: "🦫", x: 72, y: 50, type: "lower", tag: "국민간식", desc: "캐나다 국민 간식 비버테일! 바삭한 빵에 달콤한 토핑.", best: "비버테일 (딸기 바나나 초코)", hours: "매일 11am~10/11pm", tel: "418-694-1444" },
-            { id: 'D', num: 'D', name: "Q-DE-SAC", emoji: "🍕", x: 88, y: 55, type: "lower", tag: "로컬 맛집", desc: "현지인들 사이에서 유명한 식당! 화덕에서 직접 만드는 요리.", best: "Beef Cheek Pizza", hours: "매일 11:30am~9:30pm", tel: "418-692-4862" },
-            { id: 'E', num: 'E', name: "Archibald", emoji: "🍺", x: 92, y: 35, type: "lower", tag: "수제맥주", desc: "2023 World Beer Award 금메달 수상! 올드퀘벡 최고 수제맥주.", best: "Ale Blonde (금메달)", hours: "매일 10:30am~9:30/10pm", tel: "418-694-9144" },
-            { id: 'F', num: 'F', name: "La Maison Smith", emoji: "☕", x: 80, y: 65, type: "lower", tag: "유명 카페", desc: "로얄 광장 앞 가장 유명한 카페! 쫄깃한 크로아상.", best: "라떼·크로아상", hours: "매일 7am~6/7pm", tel: "581-742-6777" }
+            // Lower Town
+            { id: 16, name: "Le Lapin Sauté", emoji: "🐰", type: "lower", desc: "귀여운 토끼 간판! 토끼 고기와 오리 고기", address: "52 Rue du Petit Champlain", searchAddress: "52 Rue du Petit Champlain, Québec, QC, Canada" },
+            { id: 17, name: "Cochons Dingues (Champlain)", emoji: "🍖", type: "lower", desc: "벽돌로 예쁘게 꾸며진 곳에서 먹는 고기", address: "46 Bd Champlain", searchAddress: "46 Boulevard Champlain, Québec, QC, Canada" },
+            { id: 18, name: "Queues de Castor", emoji: "🦫", type: "lower", desc: "비버 꼬리를 닮은 빵 최고의 간식", address: "28 Boulevard Champlain", searchAddress: "28 Boulevard Champlain, Québec, QC, Canada" },
+            { id: 19, name: "Q-de-Sac Resto-Pub", emoji: "🧀", type: "lower", desc: "화덕피자랑 감자튀김 요리(푸틴)를 파는 곳", address: "10 Rue du Cul-de-Sac", searchAddress: "10 Rue du Cul-de-Sac, Québec, QC, Canada" },
+            { id: 20, name: "Archibald Microbrasserie", emoji: "🍻", type: "lower", desc: "상 받은 맛있는 맥주와 피자", address: "40 Rue du Marché-Champlain", searchAddress: "40 Rue du Marché-Champlain, Québec, QC, Canada" },
+            { id: 21, name: "La Maison Smith", emoji: "☕", type: "lower", desc: "광장 앞에 있는 제일 유명한 카페", address: "23 Rue Notre-Dame", searchAddress: "23 Rue Notre-Dame, Québec, QC, Canada" }
         ];
 
-        var pinsContainer = document.getElementById('pins-container');
-        var cardList = document.getElementById('card-list');
-        
-        // 팝업 엘리먼트
-        var overlay = document.getElementById('popup-overlay');
-        var popup = document.getElementById('popup');
-        var puHead = document.getElementById('pu-head');
-        var puTag = document.getElementById('pu-tag');
-        var puTitle = document.getElementById('pu-title');
-        var puDesc = document.getElementById('pu-desc');
-        var puBest = document.getElementById('pu-best');
-        var puHours = document.getElementById('pu-hours');
-        var puTel = document.getElementById('pu-tel');
-        
-        var activeCard = null;
-        var activePin = null;
+        let markers = {};
+        const map = L.map('map', { zoomControl: false }).setView([46.8130, -71.2080], 15);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // 랜드마크 핀 수동 추가
-        var hiltonPin = document.createElement('div');
-        hiltonPin.className = 'pin landmark';
-        hiltonPin.innerHTML = '<span>🏨</span>';
-        hiltonPin.style.left = '8%'; hiltonPin.style.top = '25%';
-        pinsContainer.appendChild(hiltonPin);
+        const listContainer = document.getElementById('place-list');
+        const sheetTitle = document.getElementById('sheet-title');
+        const bottomSheet = document.getElementById('bottom-sheet');
 
-        var chateauPin = document.createElement('div');
-        chateauPin.className = 'pin landmark';
-        chateauPin.innerHTML = '<span>🏰</span>';
-        chateauPin.style.left = '65%'; chateauPin.style.top = '60%';
-        pinsContainer.appendChild(chateauPin);
+        // 주소를 위도/경도로 변환하는 함수 (Geocoding API)
+        async function geocodeAddress(address) {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                }
+            } catch (error) {
+                console.error("Geocoding error:", error);
+            }
+            return null;
+        }
 
-        // 데이터 반복 생성
-        for (var i = 0; i < foodPlaces.length; i++) {
-            (function() {
-                var place = foodPlaces[i];
-                var isUp = place.type === 'upper';
-                var cssClass = isUp ? 'upper' : 'lower';
+        // 앱 초기화 (좌표 추출 -> 마커 생성)
+        async function initApp() {
+            for (let i = 0; i < foodPlaces.length; i++) {
+                const place = foodPlaces[i];
+                const coords = await geocodeAddress(place.searchAddress);
+                
+                if (coords) {
+                    place.lat = coords.lat;
+                    place.lng = coords.lng;
+                } else {
+                    // 변환 실패 시 기본 좌표로 폴백
+                    place.lat = 46.8130;
+                    place.lng = -71.2080;
+                }
+                
+                // OpenStreetMap API 사용 정책 준수를 위한 의도적 딜레이 (서버 차단 방지)
+                await new Promise(resolve => setTimeout(resolve, 600)); 
+            }
 
-                // 1. 지도 위 핀 생성
-                var pin = document.createElement('div');
-                pin.className = 'pin ' + cssClass;
-                pin.innerHTML = '<span>' + place.num + '</span>'; // 핀 안에는 번호 표시
-                pin.style.left = place.x + '%';
-                pin.style.top = place.y + '%';
-                pinsContainer.appendChild(pin);
+            // 지오코딩 완료 후 로딩 스크린 숨김 및 지도 렌더링
+            document.getElementById('loading-screen').style.display = 'none';
+            renderMap();
+            filterPlaces('upper');
+        }
 
-                // 2. 하단 카드 생성
-                var card = document.createElement('div');
-                card.className = 'place-card ' + cssClass;
-                card.innerHTML = 
-                    '<div class="card-emoji">' + place.emoji + '</div>' +
-                    '<div class="card-text">' +
-                        '<div class="card-tag">' + place.num + '. ' + place.tag + '</div>' +
-                        '<div class="card-name">' + place.name + '</div>' +
-                    '</div>';
-                cardList.appendChild(card);
+        function renderMap() {
+            foodPlaces.forEach(place => {
+                if(!place.lat || !place.lng) return; // 좌표가 없는 경우 건너뜀
 
-                // 이벤트 핸들러 (안전한 문법 사용)
-                var handleSelect = function(e) {
-                    if(e) e.stopPropagation();
+                const markerClass = place.type === 'upper' ? 'marker-upper' : 'marker-lower';
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div class="custom-marker ${markerClass}" style="width:40px; height:40px;">${place.emoji}</div>`,
+                    iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20]
+                });
 
-                    // 활성화 상태 토글
-                    if (activeCard) activeCard.className = activeCard.className.replace(' active', '');
-                    if (activePin) activePin.className = activePin.className.replace(' active', '');
+                const marker = L.marker([place.lat, place.lng], { icon: customIcon });
+                marker.bindPopup(`
+                    <h3 class="popup-title"><span>${place.emoji}</span> ${place.name}</h3>
+                    <div class="popup-desc">${place.desc}</div>
+                    <div class="popup-addr">📍 ${place.address}</div>
+                `);
+                
+                marker.on('click', () => {
+                    map.setView([place.lat - 0.0005, place.lng], 17, { animate: true });
+                    minimizeSheet();
+                });
+                markers[place.id] = marker;
+            });
+        }
 
-                    card.className += ' active';
-                    pin.className += ' active';
-                    activeCard = card;
-                    activePin = pin;
+        function filterPlaces(type) {
+            document.getElementById('btn-upper').classList.toggle('active', type === 'upper');
+            document.getElementById('btn-lower').classList.toggle('active', type === 'lower');
 
-                    // 팝업 내용 채우기
-                    puHead.className = 'pu-head ' + cssClass;
-                    puTag.innerHTML = place.num + '번 | ' + place.tag;
-                    puTitle.innerHTML = place.emoji + ' ' + place.name;
-                    puDesc.innerHTML = place.desc;
-                    puBest.innerHTML = place.best;
-                    puHours.innerHTML = place.hours;
-                    puTel.innerHTML = place.tel;
+            const bounds = L.latLngBounds();
+            foodPlaces.forEach(place => {
+                if(!place.lat) return;
+                
+                if (place.type === type) {
+                    if(markers[place.id]) {
+                        markers[place.id].addTo(map);
+                        bounds.extend([place.lat, place.lng]);
+                    }
+                } else {
+                    if(markers[place.id]) map.removeLayer(markers[place.id]);
+                }
+            });
 
-                    // 팝업 표시
-                    overlay.style.display = 'block';
-                    popup.style.display = 'block';
+            if(Object.keys(bounds).length > 0) {
+                map.fitBounds(bounds, { paddingBottomRight: [0, window.innerHeight * 0.45], maxZoom: 16 });
+            }
 
-                    // 카드 중앙 정렬 스크롤
-                    var targetPos = card.offsetLeft - (cardList.offsetWidth / 2) + (card.offsetWidth / 2);
-                    cardList.scrollLeft = targetPos;
+            listContainer.innerHTML = '';
+            const filtered = foodPlaces.filter(p => p.type === type);
+            sheetTitle.innerText = `${type === 'upper' ? 'Upper Town' : 'Lower Town'} (${filtered.length})`;
+
+            filtered.forEach(place => {
+                const card = document.createElement('div');
+                card.className = 'place-card';
+                card.innerHTML = `
+                    <div class="place-emoji">${place.emoji}</div>
+                    <div class="place-info">
+                        <div class="place-name">${place.name}</div>
+                        <div class="place-desc">${place.desc}</div>
+                    </div>
+                `;
+                card.onclick = () => {
+                    map.setView([place.lat - 0.0005, place.lng], 18, { animate: true });
+                    markers[place.id].openPopup();
+                    minimizeSheet();
                 };
-
-                pin.onclick = handleSelect;
-                card.onclick = handleSelect;
-            })();
+                listContainer.appendChild(card);
+            });
+            
+            document.getElementById('bottom-sheet').classList.remove('minimized');
         }
 
-        // 팝업 닫기 함수
-        function closePopup() {
-            overlay.style.display = 'none';
-            popup.style.display = 'none';
-            if (activeCard) activeCard.className = activeCard.className.replace(' active', '');
-            if (activePin) activePin.className = activePin.className.replace(' active', '');
-        }
+        function toggleSheet() { document.getElementById('bottom-sheet').classList.toggle('minimized'); }
+        function minimizeSheet() { document.getElementById('bottom-sheet').classList.add('minimized'); }
+        map.on('click', minimizeSheet);
+
+        // 앱 시작
+        initApp();
     </script>
 </body>
 </html>
